@@ -100,7 +100,6 @@ import com.junkfood.seal.ui.component.rememberSlideUpPageState
 import com.junkfood.seal.ui.component.SingleChoiceChip
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.LoadingIndicator
-import com.junkfood.seal.util.FAST_DOWNLOAD
 import com.junkfood.seal.util.FAST_DOWNLOAD_AUDIO
 import com.junkfood.seal.util.FAST_DOWNLOAD_HEIGHT
 import com.junkfood.seal.util.PreferenceUtil.getInt
@@ -538,8 +537,8 @@ private fun ConfigurePage(
     val scope = rememberCoroutineScope()
     var selectedType by remember(config) { mutableStateOf(config.downloadType) }
     var useFormatSelection by remember(config) { mutableStateOf(config.useFormatSelection) }
-    // Fast download: optimistic quality sliders, starts the task without a format page
-    var useFastDownload by remember { mutableStateOf(FAST_DOWNLOAD.getBoolean()) }
+    // Two modes: Fast download (optimistic sliders, no format page) or Custom (format page).
+    // Playlists always go through Fast download, which opens the playlist picker.
     var fastHeightIndex by remember {
         mutableIntStateOf(
             FAST_HEIGHTS.indexOf(FAST_DOWNLOAD_HEIGHT.getInt()).takeIf { it >= 0 }
@@ -547,7 +546,8 @@ private fun ConfigurePage(
         )
     }
     var fastAudioLevel by remember { mutableIntStateOf(FAST_DOWNLOAD_AUDIO.getInt()) }
-    val isFastDownload = useFastDownload && !useFormatSelection && selectedType != Playlist
+    // Sliders apply to single videos; a playlist's items are configured in the playlist picker
+    val isFastDownload = !useFormatSelection && selectedType != Playlist
     val canProceed = selectedType in config.typeEntries
 
     var showTemplateSelectionDialog by remember { mutableStateOf(false) }
@@ -592,12 +592,8 @@ private fun ConfigurePage(
                                 modifier = Modifier.size(20.dp),
                             )
                         },
-                        selected = isFastDownload,
-                        enabled = selectedType != Playlist,
-                        onClick = {
-                            useFastDownload = true
-                            useFormatSelection = false
-                        },
+                        selected = !useFormatSelection,
+                        onClick = { useFormatSelection = false },
                     )
                     AnimatedVisibility(visible = isFastDownload) {
                         FastDownloadOptions(
@@ -609,26 +605,10 @@ private fun ConfigurePage(
                             onAudioLevelChange = { fastAudioLevel = it },
                         )
                     }
-                    Preset(
-                        modifier = Modifier,
-                        preference = preferences,
-                        selected = !useFormatSelection && !isFastDownload,
-                        downloadType = selectedType,
-                        onClick = {
-                            useFastDownload = false
-                            useFormatSelection = false
-                        },
-                        showEditIcon =
-                            !useFormatSelection && !isFastDownload && selectedType != Playlist,
-                        onEdit = { onPresetEdit(selectedType) },
-                    )
                     Custom(
                         selected = useFormatSelection,
                         enabled = selectedType != Playlist,
-                        onClick = {
-                            useFastDownload = false
-                            useFormatSelection = true
-                        },
+                        onClick = { useFormatSelection = true },
                     )
                 } else {
                     if (showTemplateSelectionDialog) {
@@ -692,7 +672,6 @@ private fun ConfigurePage(
                         downloadType = selectedType,
                     )
                 )
-                FAST_DOWNLOAD.updateBoolean(useFastDownload)
                 val presetPreferences = preferences.copy(extractAudio = selectedType == Audio)
                 onActionPost(
                     Action.DownloadWithPreset(
