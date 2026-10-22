@@ -120,6 +120,8 @@ private data class FormatConfig(
     val newTitle: String,
     val selectedSubtitles: List<String>,
     val selectedAutoCaptions: List<String>,
+    /** null when the suggested format is used and the formats themselves have to decide */
+    val isAudioOnlyDownload: Boolean?,
 )
 
 @Composable
@@ -171,6 +173,7 @@ fun FormatPage(
                     newTitle = newTitle,
                     selectedSubtitles = selectedSubtitles,
                     selectedAutoCaptions = selectedAutoCaptions,
+                    isAudioOnlyDownload = isAudioOnlyDownload,
                 )
             )
 
@@ -419,6 +422,15 @@ private fun FormatPageImpl(
                                 newTitle = videoTitle,
                                 selectedSubtitles = selectedSubtitles,
                                 selectedAutoCaptions = selectedAutoCaptions,
+                                // Decide from what the user picked: some video formats report
+                                // vcodec "none" and would otherwise be extracted as audio
+                                isAudioOnlyDownload =
+                                    if (isSuggestedFormatSelected) null
+                                    else
+                                        audioOnly ||
+                                            (selectedVideoAudioFormat == NOT_SELECTED &&
+                                                selectedVideoOnlyFormat == NOT_SELECTED &&
+                                                selectedAudioOnlyFormats.isNotEmpty()),
                             )
                         )
                     },

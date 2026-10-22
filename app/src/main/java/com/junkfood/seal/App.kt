@@ -166,8 +166,12 @@ class App : Application() {
 
         fun startService() {
             if (isServiceRunning) return
-            Intent(context.applicationContext, DownloadService::class.java).also { intent ->
-                context.applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            try {
+                Intent(context.applicationContext, DownloadService::class.java).also { intent ->
+                    context.applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 

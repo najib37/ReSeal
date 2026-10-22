@@ -21,7 +21,10 @@ class DownloadService : Service() {
                 PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
         val notification = NotificationUtil.makeServiceNotification(pendingIntent)
-        startForeground(SERVICE_NOTIFICATION_ID, notification)
+        // Android 12+ refuses foreground starts while the app is in the background
+        // (ForegroundServiceStartNotAllowedException); downloads then continue as background work
+        runCatching { startForeground(SERVICE_NOTIFICATION_ID, notification) }
+            .onFailure { Log.w(TAG, "startForeground not allowed", it) }
         return DownloadServiceBinder()
     }
 

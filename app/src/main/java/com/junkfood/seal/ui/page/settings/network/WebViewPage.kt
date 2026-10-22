@@ -29,7 +29,6 @@ import com.google.accompanist.web.rememberWebViewState
 import com.google.android.material.R
 import com.junkfood.seal.util.PreferenceUtil.updateString
 import com.junkfood.seal.util.USER_AGENT_STRING
-import com.junkfood.seal.util.connectWithDelimiter
 
 private const val TAG = "WebViewPage"
 
@@ -48,17 +47,18 @@ data class Cookie(
         value: String,
     ) : this(domain = url.toDomain(), name = name, value = value)
 
+    // Plain join, not connectWithDelimiter: an empty value must still be its own (7th) column
     fun toNetscapeCookieString(): String {
-        return connectWithDelimiter(
-            domain,
-            includeSubdomains.toString().uppercase(),
-            path,
-            secure.toString().uppercase(),
-            expiry.toString(),
-            name,
-            value,
-            delimiter = "\u0009",
-        )
+        return listOf(
+                domain,
+                includeSubdomains.toString().uppercase(),
+                path,
+                secure.toString().uppercase(),
+                expiry.toString(),
+                name,
+                value,
+            )
+            .joinToString(separator = "\u0009")
     }
 }
 
@@ -69,8 +69,9 @@ private fun String.toDomain(): String {
 }
 
 private fun makeCookie(url: String, cookieString: String): Cookie {
-    cookieString.split("=").run {
-        return Cookie(url = url, name = first(), value = last())
+    // Split on the first "=" only; values (e.g. base64 padding) may contain more
+    cookieString.split("=", limit = 2).run {
+        return Cookie(url = url, name = first().trim(), value = getOrElse(1) { "" })
     }
 }
 
