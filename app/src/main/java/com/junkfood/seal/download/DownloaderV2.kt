@@ -60,6 +60,14 @@ interface DownloaderV2 {
 
     fun restart(task: Task)
 
+    /** Restarts the task with [taskId], cancelling it first if it is still running. */
+    fun restart(taskId: String): Boolean {
+        val task = getTaskStateMap().keys.find { it.id == taskId } ?: return false
+        if (getTaskStateMap()[task]?.downloadState is Task.DownloadState.Cancelable) cancel(task)
+        restart(task)
+        return true
+    }
+
     /** Enqueue a [Task] with an empty [Task.State] */
     fun enqueue(task: Task)
 
@@ -353,6 +361,7 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                             textId = R.string.download_error_msg,
                             notificationId = notificationId,
                             report = throwable.stackTraceToString(),
+                            taskId = id,
                         )
                     }
             }
@@ -453,6 +462,7 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                             textId = R.string.fetch_info_error_msg,
                             notificationId = notificationId,
                             report = throwable.stackTraceToString(),
+                            taskId = id,
                         )
                     }
             }
@@ -542,6 +552,7 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                             textId = R.string.fetch_info_error_msg,
                             notificationId = notificationId,
                             report = throwable.stackTraceToString(),
+                            taskId = id,
                         )
                     }
                     .onSuccess {
