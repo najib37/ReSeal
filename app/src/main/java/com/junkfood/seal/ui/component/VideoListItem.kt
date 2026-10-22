@@ -38,9 +38,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.AsyncImageImpl
+import com.junkfood.seal.util.isAudioFile
 import com.junkfood.seal.util.toFileSizeText
-
-private const val AUDIO_REGEX = "\\.(mp3|aac|opus|m4a|flac|wav)"
 
 @Composable
 @Preview
@@ -73,7 +72,7 @@ fun MediaListItem(
     onLongClick: () -> Unit = {},
     onShowContextMenu: () -> Unit = {},
 ) {
-    val isAudio = videoPath.contains(Regex(AUDIO_REGEX))
+    val isAudio = videoPath.isAudioFile()
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val isFileAvailable = videoFileSize != 0L

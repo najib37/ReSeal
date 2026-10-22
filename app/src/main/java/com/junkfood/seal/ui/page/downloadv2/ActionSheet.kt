@@ -310,7 +310,7 @@ fun LazyListScope.ActionButtons(
             }
             item(key = "ErrorReportButton") {
                 ErrorReportButton(modifier = Modifier.animateItem()) {
-                    onActionPost(task, UiAction.CopyErrorReport(downloadState.throwable))
+                    onActionPost(task, UiAction.CopyErrorReport(downloadState.cause))
                 }
             }
         }
@@ -510,7 +510,9 @@ fun ActionSheetInfo(modifier: Modifier = Modifier, task: Task, viewState: ViewSt
                     Text(text = extractorKey, style = MaterialTheme.typography.titleSmall)
                     Text(text = url, style = MaterialTheme.typography.bodySmall)
                 },
-                leadingIcon = { Icon(imageVector = Icons.Outlined.Link, contentDescription = null) },
+                leadingIcon = {
+                    Icon(imageVector = Icons.Outlined.Link, contentDescription = null)
+                },
             )
         }
     }

@@ -20,7 +20,6 @@ import com.kyant.monet.PaletteStyle
 import com.tencent.mmkv.MMKV
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +27,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -346,17 +344,17 @@ object PreferenceUtil {
     private val List<CommandTemplate>.selectedTemplate: CommandTemplate?
         get() = find { it.id == TEMPLATE_ID.getInt() }
 
-    fun getTemplate(): CommandTemplate {
-        var template: CommandTemplate? = null
-        runBlocking {
-            for (cnt in 1..5) {
-                template = templateListStateFlow.value.selectedTemplate
-                if (template != null) return@runBlocking
-                delay(100)
-            }
-        }
-        return template ?: throw NoSuchElementException()
-    }
+    /**
+     * The selected template, else the first one, else the built-in sample. Non-blocking: it's read
+     * during composition, and the selected template may have been deleted.
+     */
+    fun getTemplate(): CommandTemplate =
+        templateListStateFlow.value.run { selectedTemplate ?: firstOrNull() }
+            ?: CommandTemplate(
+                id = 0,
+                name = context.getString(R.string.custom_command_template),
+                template = TEMPLATE_EXAMPLE,
+            )
 
     suspend fun initializeTemplateSample() {
         TEMPLATE_ID.updateInt(
@@ -435,15 +433,16 @@ object PreferenceUtil {
         }
     }
 
-    fun encodeTaskListBackup(map: Map<Task, Task.State>) =
-        runCatching { json.encodeToString<Map<Task, Task.State>>(map) }
-            .onSuccess { kv.encode(TASK_LIST, it) }
-            .onFailure { it.printStackTrace() }
+    fun encodeTaskListBackup(map: Map<Task, Task.State>) = runCatching {
+        json.encodeToString<Map<Task, Task.State>>(map)
+    }
+        .onSuccess { kv.encode(TASK_LIST, it) }
+        .onFailure { it.printStackTrace() }
 
     fun decodeTaskListBackup(): Map<Task, Task.State> =
         runCatching {
-                kv.decodeString(TASK_LIST)?.let { json.decodeFromString<Map<Task, Task.State>>(it) }
-            }
+            kv.decodeString(TASK_LIST)?.let { json.decodeFromString<Map<Task, Task.State>>(it) }
+        }
             .onFailure { it.printStackTrace() }
             .getOrNull() ?: emptyMap()
 

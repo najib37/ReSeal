@@ -154,7 +154,7 @@ fun CommandTemplateDialog(
 @Composable
 fun OptionChipsDialog(onDismissRequest: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
-    val shortcuts by DatabaseUtil.getShortcuts().collectAsState(emptyList())
+    val shortcuts by remember { DatabaseUtil.getShortcuts() }.collectAsState(emptyList())
     var text by remember { mutableStateOf("") }
     val addShortCuts = {
         scope.launch {

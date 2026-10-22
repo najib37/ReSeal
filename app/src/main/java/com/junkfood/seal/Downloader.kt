@@ -4,13 +4,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.annotation.CheckResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.core.app.NotificationCompat
 import com.junkfood.seal.App.Companion.applicationScope
 import com.junkfood.seal.App.Companion.context
 import com.junkfood.seal.App.Companion.startService
@@ -27,6 +27,7 @@ import com.junkfood.seal.util.ToastUtil
 import com.junkfood.seal.util.VideoInfo
 import com.junkfood.seal.util.toHttpsUrl
 import com.yausername.youtubedl_android.YoutubeDL
+import java.io.File
 import java.util.concurrent.CancellationException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +38,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 
 /** Singleton Downloader for state holder & perform downloads, used by `Activity` & `Service` */
 object Downloader {
@@ -121,7 +121,12 @@ object Downloader {
             val tempFile = File.createTempFile("seal_log_", ".txt", activityContext.cacheDir)
             tempFile.writeText(output)
             val shareIntent = FileUtil.createIntentForSharingFile(tempFile, "text/plain")
-            activityContext.startActivity(Intent.createChooser(shareIntent, "Share log as file via"))
+            activityContext.startActivity(
+                Intent.createChooser(
+                    shareIntent,
+                    activityContext.getString(R.string.share_log_as_file),
+                )
+            )
         }
 
         fun onRestart() {
@@ -211,14 +216,13 @@ object Downloader {
     fun updateTaskOutput(template: CommandTemplate, url: String, line: String, progress: Float) {
         val key = makeKey(url, template.name)
         val oldValue = mutableTaskList[key] ?: return
-        val newValue =
-            oldValue.run {
-                copy(
-                    output = output + line + "\n",
-                    currentLine = line,
-                    state = CustomCommandTask.State.Running(progress),
-                )
-            }
+        val newValue = oldValue.run {
+            copy(
+                output = output + line + "\n",
+                currentLine = line,
+                state = CustomCommandTask.State.Running(progress),
+            )
+        }
         mutableTaskList[key] = newValue
     }
 
@@ -242,10 +246,9 @@ object Downloader {
 
     fun onProcessEnded() = mutableProcessCount.update { it - 1 }
 
-    fun onProcessCanceled(taskId: String) =
-        mutableTaskList.run {
-            get(taskId)?.let { this.put(taskId, it.copy(state = CustomCommandTask.State.Canceled)) }
-        }
+    fun onProcessCanceled(taskId: String) = mutableTaskList.run {
+        get(taskId)?.let { this.put(taskId, it.copy(state = CustomCommandTask.State.Canceled)) }
+    }
 
     fun onTaskError(errorReport: String, template: CommandTemplate, url: String) =
         mutableTaskList.run {
@@ -298,7 +301,9 @@ object Downloader {
     }
 
     fun updatePlaylistResult(playlistResult: PlaylistResult = PlaylistResult()) =
-        mutablePlaylistResult.update { playlistResult }
+        mutablePlaylistResult.update {
+            playlistResult
+        }
 
     fun getInfoAndDownload(
         url: String,

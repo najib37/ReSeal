@@ -12,6 +12,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
@@ -32,7 +34,6 @@ import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -50,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -62,6 +64,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,6 +89,8 @@ import com.junkfood.seal.database.backup.BackupUtil.BackupDestination.File
 import com.junkfood.seal.database.backup.BackupUtil.toJsonString
 import com.junkfood.seal.database.backup.BackupUtil.toURLListString
 import com.junkfood.seal.database.objects.DownloadedVideoInfo
+import com.junkfood.seal.download.DownloaderV2
+import com.junkfood.seal.download.Task
 import com.junkfood.seal.ui.common.HapticFeedback.slightHapticFeedback
 import com.junkfood.seal.ui.common.LocalWindowWidthState
 import com.junkfood.seal.ui.component.BackButton
@@ -95,31 +100,26 @@ import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.MediaListItem
 import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
+import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.component.SealSearchBar
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.junkfood.seal.download.DownloaderV2
-import com.junkfood.seal.download.Task
 import com.junkfood.seal.ui.component.VideoFilterChip
 import com.junkfood.seal.ui.page.downloadv2.Filter
-import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.page.downloadv2.ListItemStateText
 import com.junkfood.seal.ui.page.downloadv2.SheetContent
-import com.junkfood.seal.ui.page.downloadv2.rememberTaskActionHandler
 import com.junkfood.seal.ui.page.downloadv2.VideoListItem as TaskListItem
-import org.koin.compose.koinInject
+import com.junkfood.seal.ui.page.downloadv2.rememberTaskActionHandler
 import com.junkfood.seal.ui.svg.DynamicColorImageVectors
 import com.junkfood.seal.ui.svg.drawablevectors.videoSteaming
-import com.junkfood.seal.util.AUDIO_REGEX
 import com.junkfood.seal.util.FileUtil
 import com.junkfood.seal.util.ToastUtil
+import com.junkfood.seal.util.isAudioFile
 import com.junkfood.seal.util.toFileSizeText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 /** Which downloads the Downloads page lists: everything, only in-progress, or only history. */
 private enum class StatusFilter {
@@ -133,8 +133,7 @@ fun DownloadedVideoInfo.filterByType(
     audioFilter: Boolean = true,
 ): Boolean {
     return if (!(videoFilter || audioFilter)) true
-    else if (audioFilter) this.videoPath.contains(Regex(AUDIO_REGEX))
-    else !this.videoPath.contains(Regex(AUDIO_REGEX))
+    else if (audioFilter) this.videoPath.isAudioFile() else !this.videoPath.isAudioFile()
 }
 
 fun DownloadedVideoInfo.filterSort(
@@ -142,7 +141,7 @@ fun DownloadedVideoInfo.filterSort(
     filterSet: Set<String>,
 ): Boolean {
     return filterByType(videoFilter = viewState.videoFilter, audioFilter = viewState.audioFilter) &&
-            filterByExtractor(filterSet.elementAtOrNull(viewState.activeFilterIndex))
+        filterByExtractor(filterSet.elementAtOrNull(viewState.activeFilterIndex))
 }
 
 fun DownloadedVideoInfo.filterByExtractor(extractor: String?): Boolean {
@@ -161,10 +160,10 @@ fun VideoListPage(
     val viewState by viewModel.stateFlow.collectAsStateWithLifecycle()
     val fullVideoList by viewModel.videoListFlow.collectAsStateWithLifecycle(emptyList())
     val searchedVideoList by
-    viewModel.searchedVideoListFlow.collectAsStateWithLifecycle(emptyList())
+        viewModel.searchedVideoListFlow.collectAsStateWithLifecycle(emptyList())
 
     val videoList = if (viewState.isSearching) searchedVideoList else fullVideoList
-    val filterSet by viewModel.filterSetFlow.collectAsState(mutableSetOf())
+    val filterSet by viewModel.filterSetFlow.collectAsState(emptySet())
 
     // In-progress tasks live only in the downloader; completed ones are already in the history DB
     val taskStateMap = downloader.getTaskStateMap()
@@ -175,7 +174,8 @@ fun VideoListPage(
             }
         }
     }
-    // Same rule as the queue's Downloading filter: queued, fetching or running (not canceled/failed)
+    // Same rule as the queue's Downloading filter: queued, fetching or running (not
+    // canceled/failed)
     val downloadingTasks by remember {
         derivedStateOf { activeTasks.filter { Filter.Downloading.predict(it) } }
     }
@@ -200,7 +200,7 @@ fun VideoListPage(
     val clipboardManager = LocalClipboardManager.current
 
     val fileSizeMap by
-    viewModel.fileSizeMapFlow.collectAsStateWithLifecycle(initialValue = emptyMap())
+        viewModel.fileSizeMapFlow.collectAsStateWithLifecycle(initialValue = emptyMap())
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val hostState = remember { SnackbarHostState() }
 
@@ -289,7 +289,7 @@ fun VideoListPage(
             mutableIntStateOf(
                 videoList.count { info ->
                     selectedItemIds.contains(info.id) &&
-                            info.filterByType(videoFilter = true, audioFilter = false)
+                        info.filterByType(videoFilter = true, audioFilter = false)
                 }
             )
         }
@@ -298,19 +298,19 @@ fun VideoListPage(
             mutableIntStateOf(
                 videoList.count { info ->
                     selectedItemIds.contains(info.id) &&
-                            info.filterByType(videoFilter = false, audioFilter = true)
+                        info.filterByType(videoFilter = false, audioFilter = true)
                 }
             )
         }
 
     val selectedFileSizeSum by
-    remember(selectedItemIds.size) {
-        derivedStateOf {
-            selectedItemIds.fold(0L) { acc: Long, id: Int ->
-                acc + fileSizeMap.getOrElse(id) { 0L }
+        remember(selectedItemIds.size) {
+            derivedStateOf {
+                selectedItemIds.fold(0L) { acc: Long, id: Int ->
+                    acc + fileSizeMap.getOrElse(id) { 0L }
+                }
             }
         }
-    }
 
     val visibleItemCount =
         remember(videoList, viewState) {
@@ -318,17 +318,17 @@ fun VideoListPage(
         }
 
     val checkBoxState by
-    remember(selectedItemIds, visibleItemCount) {
-        derivedStateOf {
-            if (selectedItemIds.isEmpty()) ToggleableState.Off
-            else if (
-                selectedItemIds.size == visibleItemCount.intValue &&
-                selectedItemIds.isNotEmpty()
-            )
-                ToggleableState.On
-            else ToggleableState.Indeterminate
+        remember(selectedItemIds, visibleItemCount) {
+            derivedStateOf {
+                if (selectedItemIds.isEmpty()) ToggleableState.Off
+                else if (
+                    selectedItemIds.size == visibleItemCount.intValue &&
+                        selectedItemIds.isNotEmpty()
+                )
+                    ToggleableState.On
+                else ToggleableState.Indeterminate
+            }
         }
-    }
 
     var showRemoveDialog by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -435,7 +435,9 @@ fun VideoListPage(
                                             )
                                         },
                                         text = {
-                                            Text(text = "Clear All Downloads")
+                                            Text(
+                                                text = stringResource(R.string.clear_all_downloads)
+                                            )
                                         },
                                         onClick = {
                                             showClearAllDialog = true
@@ -469,7 +471,7 @@ fun VideoListPage(
                                     for (item in videoList) {
                                         if (
                                             !selectedItemIds.contains(item.id) &&
-                                            item.filterSort(viewState, filterSet)
+                                                item.filterSort(viewState, filterSet)
                                         ) {
                                             selectedItemIds.add(item.id)
                                         }
@@ -575,7 +577,7 @@ fun VideoListPage(
             }
             for (info in if (statusFilter == StatusFilter.Downloading) emptyList() else videoList) {
 
-                item(key = info.id, contentType = { info.videoPath.contains(AUDIO_REGEX) }) {
+                item(key = info.id, contentType = { info.videoPath.isAudioFile() }) {
                     with(info) {
                         AnimatedVisibility(
                             modifier = Modifier,
@@ -691,7 +693,7 @@ fun VideoListPage(
                         modifier = Modifier.padding(horizontal = 12.dp),
                         text =
                             stringResource(R.string.delete_file) +
-                                    " (${selectedFileSizeSum.toFileSizeText()})",
+                                " (${selectedFileSizeSum.toFileSizeText()})",
                         checked = deleteFile,
                     ) {
                         deleteFile = !deleteFile
@@ -737,8 +739,8 @@ fun VideoListPage(
             }
 
         ExportDialog(onDismissRequest = { showExportDialog = false }, itemCount = list.size) {
-                type,
-                destination ->
+            type,
+            destination ->
             list.backupToString(type).let {
                 when (destination) {
                     Clipboard -> clipboardManager.setText(AnnotatedString(it))
@@ -791,7 +793,7 @@ fun VideoListPage(
     if (showClearAllDialog) {
         AlertDialog(
             onDismissRequest = { showClearAllDialog = false },
-            title = { Text("Clear All Downloads?") },
+            title = { Text(stringResource(R.string.clear_all_downloads_title)) },
             text = {
                 Column {
                     Text(
@@ -816,16 +818,14 @@ fun VideoListPage(
                         showClearAllDialog = false
                     }
                 ) {
-                    Text("Delete All")
+                    Text(stringResource(R.string.delete_all))
                 }
             },
             dismissButton = {
-                Button(
-                    onClick = { showClearAllDialog = false }
-                ) {
-                    Text("Cancel")
+                Button(onClick = { showClearAllDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 }

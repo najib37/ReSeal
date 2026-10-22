@@ -5,6 +5,8 @@
         <exclude domain="database" path="app_database" />
         <exclude domain="database" path="app_database-shm" />
         <exclude domain="database" path="app_database-wal" />
+        <!-- MMKV preferences: the proxy URL can embed credentials. Device transfer keeps them. -->
+        <exclude domain="file" path="mmkv/" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="database" path="app_database" />

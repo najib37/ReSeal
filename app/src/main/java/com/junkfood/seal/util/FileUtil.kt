@@ -17,9 +17,13 @@ import com.junkfood.seal.R
 import java.io.File
 import okhttp3.internal.closeQuietly
 
-const val AUDIO_REGEX = "(mp3|aac|opus|m4a)$"
-const val THUMBNAIL_REGEX = "\\.(jpg|png)$"
-const val SUBTITLE_REGEX = "\\.(lrc|vtt|srt|ass|json3|srv.|ttml)$"
+private val AUDIO_FILE =
+    Regex("""\.(mp3|aac|opus|m4a|flac|wav|ogg|oga|mka|alac|aiff?)$""", RegexOption.IGNORE_CASE)
+private val THUMBNAIL_FILE = Regex("""\.(jpg|png)$""")
+private val SUBTITLE_FILE = Regex("""\.(lrc|vtt|srt|ass|json3|srv.|ttml)$""")
+
+fun String.isAudioFile(): Boolean = contains(AUDIO_FILE)
+
 private const val PRIVATE_DIRECTORY_SUFFIX = ".Seal"
 
 object FileUtil {
@@ -83,11 +87,12 @@ object FileUtil {
         }
 
     fun createIntentForSharingFile(file: File, mimeType: String): Intent? {
-        val uri = FileProvider.getUriForFile(
-            context,
-            context.getFileProvider(),
-            file
-        )
+        val uri =
+            FileProvider.getUriForFile(
+                context,
+                context.getFileProvider(),
+                file,
+            )
         return Intent(Intent.ACTION_SEND).apply {
             type = mimeType
             putExtra(Intent.EXTRA_STREAM, uri)
@@ -121,10 +126,9 @@ object FileUtil {
         return sanitized.trimEnd('.', ' ').ifEmpty { "download" }
     }
 
-    fun deleteFile(path: String) =
-        path.runCatching {
-            if (!File(path).delete()) DocumentFile.fromSingleUri(context, Uri.parse(this))?.delete()
-        }
+    fun deleteFile(path: String) = path.runCatching {
+        if (!File(path).delete()) DocumentFile.fromSingleUri(context, Uri.parse(this))?.delete()
+    }
 
     @CheckResult
     fun scanFileToMediaLibraryPostDownload(title: String, downloadDir: String): List<String> =
@@ -135,9 +139,7 @@ object FileUtil {
             .toMutableList()
             .apply {
                 MediaScannerConnection.scanFile(context, this.toList().toTypedArray(), null, null)
-                removeAll {
-                    it.contains(Regex(THUMBNAIL_REGEX)) || it.contains(Regex(SUBTITLE_REGEX))
-                }
+                removeAll { it.contains(THUMBNAIL_FILE) || it.contains(SUBTITLE_FILE) }
             }
 
     fun scanDownloadDirectoryToMediaLibrary(downloadDir: String) =
@@ -159,31 +161,30 @@ object FileUtil {
                     DocumentsContract.getTreeDocumentId(this),
                 )
             }
-        val res =
-            tempPath.runCatching {
-                walkTopDown().forEach {
-                    if (it.isDirectory) return@forEach
-                    val mimeType =
-                        MimeTypeMap.getSingleton().getMimeTypeFromExtension(it.extension) ?: "*/*"
+        val res = tempPath.runCatching {
+            walkTopDown().forEach {
+                if (it.isDirectory) return@forEach
+                val mimeType =
+                    MimeTypeMap.getSingleton().getMimeTypeFromExtension(it.extension) ?: "*/*"
 
-                    val destUri =
-                        DocumentsContract.createDocument(
-                            context.contentResolver,
-                            destDir,
-                            mimeType,
-                            it.name,
-                        ) ?: return@forEach
+                val destUri =
+                    DocumentsContract.createDocument(
+                        context.contentResolver,
+                        destDir,
+                        mimeType,
+                        it.name,
+                    ) ?: return@forEach
 
-                    val inputStream = it.inputStream()
-                    val outputStream =
-                        context.contentResolver.openOutputStream(destUri) ?: return@forEach
-                    inputStream.copyTo(outputStream)
-                    inputStream.closeQuietly()
-                    outputStream.closeQuietly()
-                    uriList.add(destUri.toString())
-                }
-                uriList
+                val inputStream = it.inputStream()
+                val outputStream =
+                    context.contentResolver.openOutputStream(destUri) ?: return@forEach
+                inputStream.copyTo(outputStream)
+                inputStream.closeQuietly()
+                outputStream.closeQuietly()
+                uriList.add(destUri.toString())
             }
+            uriList
+        }
         tempPath.deleteRecursively()
         return res
     }
@@ -199,25 +200,40 @@ object FileUtil {
     }
 
     /**
-     * Deletes partial/temporary files left behind by an unfinished download: the per-video SD
-     * card staging dir, plus any file in the shared temp dirs whose name contains [title].
+     * Deletes partial/temporary files left behind by an unfinished download: the per-video SD card
+     * staging dir, plus yt-dlp temp files (`.part`, `.ytdl`, `.temp.*`) in the shared temp dirs
+     * whose name is [title] followed by an extension or a ` [id]` suffix. Matching a bare substring
+     * would also hit other downloads with a short or generic title.
      */
     fun Context.deleteTempFilesForVideo(videoId: String?, title: String?): Int {
         var count = 0
-        videoId?.takeIf { it.isNotBlank() }?.let { id ->
-            getSdcardTempDir(id).takeIf { it.exists() }?.run {
-                count += walkTopDown().count { it.isFile }
-                deleteRecursively()
+        videoId
+            ?.takeIf { it.isNotBlank() }
+            ?.let { id ->
+                getSdcardTempDir(id)
+                    .takeIf { it.exists() }
+                    ?.run {
+                        count += walkTopDown().count { it.isFile }
+                        deleteRecursively()
+                    }
             }
-        }
         val name = title?.takeIf { it.isNotBlank() } ?: return count
         listOf(getExternalTempDir(), getInternalTempDir()).forEach { dir ->
             dir.walkTopDown()
-                .filter { it.isFile && !it.isHidden && it.name.contains(name) }
+                .filter {
+                    it.isFile &&
+                        !it.isHidden &&
+                        (it.name.startsWith("$name.") || it.name.startsWith("$name [")) &&
+                        it.name.isYtDlpTempFile()
+                }
                 .forEach { if (it.delete()) count++ }
         }
         return count
     }
+
+    private val YT_DLP_TEMP_FILE = Regex("""\.(part(-Frag\d+)?|ytdl)$|\.temp\.\w+$|\.f\d+\.\w+$""")
+
+    private fun String.isYtDlpTempFile(): Boolean = contains(YT_DLP_TEMP_FILE)
 
     fun Context.getConfigDirectory(): File = cacheDir
 

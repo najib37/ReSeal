@@ -1,7 +1,6 @@
 package com.junkfood.seal.ui.page.settings.network
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -29,8 +28,6 @@ import com.google.accompanist.web.rememberWebViewState
 import com.google.android.material.R
 import com.junkfood.seal.util.PreferenceUtil.updateString
 import com.junkfood.seal.util.USER_AGENT_STRING
-
-private const val TAG = "WebViewPage"
 
 data class Cookie(
     val domain: String = "",
@@ -81,7 +78,6 @@ private fun makeCookie(url: String, cookieString: String): Cookie {
 fun WebViewPage(cookiesViewModel: CookiesViewModel, onDismissRequest: () -> Unit) {
 
     val state by cookiesViewModel.stateFlow.collectAsStateWithLifecycle()
-    Log.d(TAG, state.editingCookieProfile.url)
 
     val cookieManager = CookieManager.getInstance()
     val cookieSet = remember { mutableSetOf<Cookie>() }
@@ -139,6 +135,9 @@ fun WebViewPage(cookiesViewModel: CookiesViewModel, onDismissRequest: () -> Unit
                         javaScriptCanOpenWindowsAutomatically = true
                         javaScriptEnabled = true
                         domStorageEnabled = true
+                        // A sign-in browser only needs the web; keep it off local files
+                        allowFileAccess = false
+                        allowContentAccess = false
                         USER_AGENT_STRING.updateString(userAgentString)
                     }
                     cookieManager.setAcceptThirdPartyCookies(this, true)

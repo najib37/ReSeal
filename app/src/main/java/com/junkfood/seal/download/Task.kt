@@ -7,10 +7,10 @@ import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.Format
 import com.junkfood.seal.util.VideoInfo
 import com.junkfood.seal.util.toHttpsUrl
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlin.math.roundToInt
 
 private val TypeInfo.id: String
     get() =
@@ -20,8 +20,11 @@ private val TypeInfo.id: String
             TypeInfo.URL -> ""
         }
 
-private fun makeId(url: String, type: TypeInfo, preferences: DownloadUtil.DownloadPreferences): String =
-    "${url}_${type.id}_${preferences.hashCode()}"
+private fun makeId(
+    url: String,
+    type: TypeInfo,
+    preferences: DownloadUtil.DownloadPreferences,
+): String = "${url}_${type.id}_${preferences.hashCode()}"
 
 @Serializable
 data class Task(
@@ -95,9 +98,17 @@ data class Task(
 
         @Serializable
         data class Error(
-            @Transient val throwable: Throwable = Throwable(),
+            @Transient private val throwable: Throwable = Throwable(),
             override val action: RestartableAction,
-        ) : DownloadState, Restartable
+            // Throwables aren't serializable; the message survives the task backup so a restored
+            // task still says why it failed
+            val message: String? = throwable.message,
+        ) : DownloadState, Restartable {
+            val cause: Throwable
+                get() =
+                    if (throwable.message == null && message != null) Throwable(message)
+                    else throwable
+        }
 
         @Serializable data class Completed(val filePath: String?) : DownloadState
 

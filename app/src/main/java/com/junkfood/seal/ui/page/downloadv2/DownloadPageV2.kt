@@ -1,7 +1,6 @@
 package com.junkfood.seal.ui.page.downloadv2
 
 import android.content.Intent
-import android.content.res.Configuration
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.rememberSplineBasedDecay
@@ -38,14 +37,13 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +51,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -62,13 +61,11 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,24 +104,19 @@ import com.junkfood.seal.ui.common.HapticFeedback.slightHapticFeedback
 import com.junkfood.seal.ui.common.LocalDarkTheme
 import com.junkfood.seal.ui.common.LocalWindowWidthState
 import com.junkfood.seal.ui.component.SealModalBottomSheet
-import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.Action
 import com.junkfood.seal.ui.page.downloadv2.configure.Config
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel
+import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.Action
 import com.junkfood.seal.ui.page.downloadv2.configure.FormatPage
 import com.junkfood.seal.ui.page.downloadv2.configure.PlaylistSelectionPage
-import com.junkfood.seal.ui.page.downloadv2.configure.PreferencesMock
 import com.junkfood.seal.ui.svg.DynamicColorImageVectors
 import com.junkfood.seal.ui.svg.drawablevectors.download
-import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.FileUtil
 import com.junkfood.seal.util.getErrorReport
 import com.junkfood.seal.util.makeToast
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -209,10 +201,13 @@ fun rememberTaskActionHandler(downloader: DownloaderV2): (Task, UiAction) -> Uni
 
     fun removeTask(task: Task, deleteFiles: Boolean) {
         val state = taskStateMap[task]
-        if (state?.downloadState is Task.DownloadState.Cancelable) downloader.cancel(task)
+        val runningJob = (state?.downloadState as? Task.DownloadState.Cancelable)?.job
+        if (runningJob != null) downloader.cancel(task)
         downloader.remove(task)
         if (!deleteFiles || state == null) return
         scope.launch(Dispatchers.IO) {
+            // Let yt-dlp exit first, or it can recreate the .part files after they're deleted
+            runningJob?.join()
             when (val downloadState = state.downloadState) {
                 is Task.DownloadState.Completed ->
                     downloadState.filePath?.let { FileUtil.deleteFile(it) }
@@ -442,8 +437,7 @@ fun DownloadPageImplV2(
                     ) {
                         val filters = Filter.entries
                         filters.forEachIndexed { index, filter ->
-                            val count =
-                                taskDownloadStateMap.count { filter.predict(it.toPair()) }
+                            val count = taskDownloadStateMap.count { filter.predict(it.toPair()) }
                             ToggleButton(
                                 checked = activeFilter == filter,
                                 shapes =
@@ -499,10 +493,9 @@ fun DownloadPageImplV2(
                 ) {
                     if (filteredMap.isNotEmpty()) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            val videoCount =
-                                filteredMap.count {
-                                    !it.value.viewState.videoFormats.isNullOrEmpty()
-                                }
+                            val videoCount = filteredMap.count {
+                                !it.value.viewState.videoFormats.isNullOrEmpty()
+                            }
                             SubHeader(
                                 modifier = Modifier,
                                 videoCount = videoCount,
@@ -810,4 +803,3 @@ fun SubHeader(
         }
     }
 }
-

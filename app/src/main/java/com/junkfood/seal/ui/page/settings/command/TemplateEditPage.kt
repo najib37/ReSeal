@@ -188,7 +188,10 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                 }
             }
             item {
-                val shortcuts by DatabaseUtil.getShortcuts().collectAsState(emptyList())
+                val shortcuts by remember {
+                    DatabaseUtil.getShortcuts()
+                }
+                    .collectAsState(emptyList())
                 Column(
                     modifier = Modifier.fillParentMaxWidth().horizontalScroll(rememberScrollState())
                 ) {
@@ -201,13 +204,12 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                             ShortcutChip(
                                 text = item.option,
                                 onClick = {
-                                    templateText =
-                                        templateText.run {
-                                            if (isEmpty()) item.option
-                                            else
-                                                this.removeSuffix(" ").removeSuffix("\n") +
-                                                    "\n${item.option}"
-                                        }
+                                    templateText = templateText.run {
+                                        if (isEmpty()) item.option
+                                        else
+                                            this.removeSuffix(" ").removeSuffix("\n") +
+                                                "\n${item.option}"
+                                    }
                                 },
                             )
                         }
