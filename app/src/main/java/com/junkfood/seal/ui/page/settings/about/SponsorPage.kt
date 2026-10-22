@@ -30,7 +30,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
@@ -66,6 +65,7 @@ import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.AsyncImageImpl
 import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.PreferenceSubtitle
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.component.SponsorItem
 import com.junkfood.seal.ui.component.gitHubAvatar
@@ -145,7 +145,7 @@ fun SponsorsPage(onNavigateBack: () -> Unit) {
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(modifier = Modifier, text = stringResource(id = R.string.sponsors))
                 },

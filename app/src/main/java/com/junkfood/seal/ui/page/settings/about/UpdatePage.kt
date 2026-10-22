@@ -16,7 +16,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -38,10 +37,11 @@ import com.junkfood.seal.App
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.intState
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceInfo
 import com.junkfood.seal.ui.component.PreferenceSingleChoiceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferenceSwitchWithContainer
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.page.UpdateDialog
 import com.junkfood.seal.util.AUTO_UPDATE
 import com.junkfood.seal.util.PRE_RELEASE
@@ -76,7 +76,7 @@ fun UpdatePage(onNavigateBack: () -> Unit) {
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(modifier = Modifier, text = stringResource(id = R.string.auto_update))
                 },
@@ -97,30 +97,24 @@ fun UpdatePage(onNavigateBack: () -> Unit) {
                     }
                 }
                 item {
-                    PreferenceSubtitle(
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        text = stringResource(id = R.string.update_channel),
-                    )
-                }
-                item {
-                    PreferenceSingleChoiceItem(
-                        text = stringResource(id = R.string.stable_channel),
-                        selected = updateChannel == STABLE,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                    ) {
-                        updateChannel = STABLE
-                        UPDATE_CHANNEL.updateInt(updateChannel)
-                    }
-                }
+                    PreferenceGroup(title = stringResource(id = R.string.update_channel)) {
+                        PreferenceSingleChoiceItem(
+                            text = stringResource(id = R.string.stable_channel),
+                            selected = updateChannel == STABLE,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                        ) {
+                            updateChannel = STABLE
+                            UPDATE_CHANNEL.updateInt(updateChannel)
+                        }
 
-                item {
-                    PreferenceSingleChoiceItem(
-                        text = stringResource(id = R.string.pre_release_channel),
-                        selected = updateChannel == PRE_RELEASE,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                    ) {
-                        updateChannel = PRE_RELEASE
-                        UPDATE_CHANNEL.updateInt(updateChannel)
+                        PreferenceSingleChoiceItem(
+                            text = stringResource(id = R.string.pre_release_channel),
+                            selected = updateChannel == PRE_RELEASE,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                        ) {
+                            updateChannel = PRE_RELEASE
+                            UPDATE_CHANNEL.updateInt(updateChannel)
+                        }
                     }
                 }
                 item {

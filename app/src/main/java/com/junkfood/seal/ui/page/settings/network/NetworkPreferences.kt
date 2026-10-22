@@ -12,7 +12,6 @@ import androidx.compose.material.icons.outlined.SignalCellularConnectedNoInterne
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -28,11 +27,12 @@ import androidx.compose.ui.res.stringResource
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.booleanState
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceInfo
 import com.junkfood.seal.ui.component.PreferenceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.ARIA2C
 import com.junkfood.seal.util.CELLULAR_DOWNLOAD
 import com.junkfood.seal.util.COOKIES
@@ -64,7 +64,7 @@ fun NetworkPreferences(navigateToCookieProfilePage: () -> Unit = {}, onNavigateB
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.network)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 scrollBehavior = scrollBehavior,
@@ -80,98 +80,91 @@ fun NetworkPreferences(navigateToCookieProfilePage: () -> Unit = {}, onNavigateB
                             text = stringResource(id = R.string.custom_command_enabled_hint)
                         )
                     }
-                item { PreferenceSubtitle(text = stringResource(R.string.general_settings)) }
                 item {
-                    var isRateLimitEnabled by remember { mutableStateOf(RATE_LIMIT.getBoolean()) }
+                    PreferenceGroup(title = stringResource(R.string.general_settings)) {
+                        var isRateLimitEnabled by remember {
+                            mutableStateOf(RATE_LIMIT.getBoolean())
+                        }
 
-                    PreferenceSwitchWithDivider(
-                        title = stringResource(R.string.rate_limit),
-                        description = stringResource(R.string.rate_limit_desc),
-                        icon = Icons.Outlined.Speed,
-                        enabled = !isCustomCommandEnabled,
-                        isChecked = isRateLimitEnabled,
-                        onChecked = {
-                            isRateLimitEnabled = !isRateLimitEnabled
-                            updateValue(RATE_LIMIT, isRateLimitEnabled)
-                        },
-                        onClick = { showRateLimitDialog = true },
-                    )
-                }
-                item {
-                    var isDownloadWithCellularEnabled by remember {
-                        mutableStateOf(CELLULAR_DOWNLOAD.getBoolean())
-                    }
-                    PreferenceSwitch(
-                        title = stringResource(R.string.download_with_cellular),
-                        description = stringResource(R.string.download_with_cellular_desc),
-                        icon =
-                            if (isDownloadWithCellularEnabled) Icons.Outlined.SignalCellular4Bar
-                            else Icons.Outlined.SignalCellularConnectedNoInternet4Bar,
-                        isChecked = isDownloadWithCellularEnabled,
-                        onClick = {
-                            isDownloadWithCellularEnabled = !isDownloadWithCellularEnabled
-                            updateValue(CELLULAR_DOWNLOAD, isDownloadWithCellularEnabled)
-                        },
-                    )
-                }
-
-                item { PreferenceSubtitle(text = stringResource(id = R.string.advanced_settings)) }
-
-                item {
-                    PreferenceSwitch(
-                        title = stringResource(R.string.aria2),
-                        icon = Icons.Outlined.Bolt,
-                        description = stringResource(R.string.aria2_desc),
-                        isChecked = aria2c,
-                        onClick = {
-                            aria2c = !aria2c
-                            updateValue(ARIA2C, aria2c)
-                        },
-                    )
-                }
-                item {
-                    PreferenceSwitchWithDivider(
-                        title = stringResource(id = R.string.proxy),
-                        description = stringResource(id = R.string.proxy_desc),
-                        icon = Icons.Outlined.VpnKey,
-                        isChecked = proxy,
-                        onChecked = {
-                            proxy = !proxy
-                            PROXY.updateBoolean(proxy)
-                        },
-                        onClick = { showProxyDialog = true },
-                        enabled = !isCustomCommandEnabled,
-                    )
-                }
-                item {
-                    PreferenceItem(
-                        title = stringResource(id = R.string.concurrent_download),
-                        description = stringResource(R.string.concurrent_download_desc),
-                        icon = Icons.Outlined.OfflineBolt,
-                        enabled = !aria2c && !isCustomCommandEnabled,
-                    ) {
-                        showConcurrentDownloadDialog = true
+                        PreferenceSwitchWithDivider(
+                            title = stringResource(R.string.rate_limit),
+                            description = stringResource(R.string.rate_limit_desc),
+                            icon = Icons.Outlined.Speed,
+                            enabled = !isCustomCommandEnabled,
+                            isChecked = isRateLimitEnabled,
+                            onChecked = {
+                                isRateLimitEnabled = !isRateLimitEnabled
+                                updateValue(RATE_LIMIT, isRateLimitEnabled)
+                            },
+                            onClick = { showRateLimitDialog = true },
+                        )
+                        var isDownloadWithCellularEnabled by remember {
+                            mutableStateOf(CELLULAR_DOWNLOAD.getBoolean())
+                        }
+                        PreferenceSwitch(
+                            title = stringResource(R.string.download_with_cellular),
+                            description = stringResource(R.string.download_with_cellular_desc),
+                            icon =
+                                if (isDownloadWithCellularEnabled) Icons.Outlined.SignalCellular4Bar
+                                else Icons.Outlined.SignalCellularConnectedNoInternet4Bar,
+                            isChecked = isDownloadWithCellularEnabled,
+                            onClick = {
+                                isDownloadWithCellularEnabled = !isDownloadWithCellularEnabled
+                                updateValue(CELLULAR_DOWNLOAD, isDownloadWithCellularEnabled)
+                            },
+                        )
                     }
                 }
+
                 item {
-                    PreferenceSwitch(
-                        title = stringResource(R.string.force_ipv4),
-                        description = stringResource(id = R.string.force_ipv4_desc),
-                        icon = Icons.Outlined.SettingsEthernet,
-                        enabled = !isCustomCommandEnabled,
-                        isChecked = forceIpv4,
-                    ) {
-                        forceIpv4 = !forceIpv4
-                        FORCE_IPV4.updateBoolean(forceIpv4)
+                    PreferenceGroup(title = stringResource(id = R.string.advanced_settings)) {
+                        PreferenceSwitch(
+                            title = stringResource(R.string.aria2),
+                            icon = Icons.Outlined.Bolt,
+                            description = stringResource(R.string.aria2_desc),
+                            isChecked = aria2c,
+                            onClick = {
+                                aria2c = !aria2c
+                                updateValue(ARIA2C, aria2c)
+                            },
+                        )
+                        PreferenceSwitchWithDivider(
+                            title = stringResource(id = R.string.proxy),
+                            description = stringResource(id = R.string.proxy_desc),
+                            icon = Icons.Outlined.VpnKey,
+                            isChecked = proxy,
+                            onChecked = {
+                                proxy = !proxy
+                                PROXY.updateBoolean(proxy)
+                            },
+                            onClick = { showProxyDialog = true },
+                            enabled = !isCustomCommandEnabled,
+                        )
+                        PreferenceItem(
+                            title = stringResource(id = R.string.concurrent_download),
+                            description = stringResource(R.string.concurrent_download_desc),
+                            icon = Icons.Outlined.OfflineBolt,
+                            enabled = !aria2c && !isCustomCommandEnabled,
+                        ) {
+                            showConcurrentDownloadDialog = true
+                        }
+                        PreferenceSwitch(
+                            title = stringResource(R.string.force_ipv4),
+                            description = stringResource(id = R.string.force_ipv4_desc),
+                            icon = Icons.Outlined.SettingsEthernet,
+                            enabled = !isCustomCommandEnabled,
+                            isChecked = forceIpv4,
+                        ) {
+                            forceIpv4 = !forceIpv4
+                            FORCE_IPV4.updateBoolean(forceIpv4)
+                        }
+                        PreferenceItem(
+                            title = stringResource(R.string.cookies),
+                            description = stringResource(R.string.cookies_desc),
+                            icon = Icons.Outlined.Cookie,
+                            onClick = { navigateToCookieProfilePage() },
+                        )
                     }
-                }
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.cookies),
-                        description = stringResource(R.string.cookies_desc),
-                        icon = Icons.Outlined.Cookie,
-                        onClick = { navigateToCookieProfilePage() },
-                    )
                 }
             }
         },

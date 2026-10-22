@@ -31,9 +31,9 @@ import com.junkfood.seal.App
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.Route
 import com.junkfood.seal.ui.common.booleanState
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceInfo
 import com.junkfood.seal.ui.component.PreferenceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.page.settings.BasePreferencePage
 import com.junkfood.seal.ui.page.settings.general.YtdlpUpdateChannelDialog
@@ -89,98 +89,102 @@ fun TroubleShootingPage(
                     Spacer(Modifier.height(8.dp))
                 }
             }
-            item { PreferenceSubtitle(text = stringResource(R.string.update)) }
             item {
-                var isUpdating by remember { mutableStateOf(false) }
-                var showYtdlpDialog by remember { mutableStateOf(false) }
+                PreferenceGroup(title = stringResource(R.string.update)) {
+                    var isUpdating by remember { mutableStateOf(false) }
+                    var showYtdlpDialog by remember { mutableStateOf(false) }
 
-                var ytdlpVersion by remember {
-                    mutableStateOf(
-                        YoutubeDL.getInstance().version(context.applicationContext)
-                            ?: context.getString(R.string.ytdlp_update)
+                    var ytdlpVersion by remember {
+                        mutableStateOf(
+                            YoutubeDL.getInstance().version(context.applicationContext)
+                                ?: context.getString(R.string.ytdlp_update)
+                        )
+                    }
+                    PreferenceItem(
+                        title = stringResource(id = R.string.ytdlp_update_action),
+                        description = ytdlpVersion,
+                        leadingIcon = {
+                            if (isUpdating) {
+                                CircularProgressIndicator(
+                                    modifier =
+                                        Modifier.padding(start = 8.dp, end = 16.dp)
+                                            .size(24.dp)
+                                            .padding(2.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Outlined.Update,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(start = 8.dp, end = 16.dp).size(24.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                        onClick = {
+                            scope.launch(Dispatchers.IO) {
+                                runCatching {
+                                        isUpdating = true
+                                        UpdateUtil.updateYtDlp()
+                                        ytdlpVersion = YT_DLP_VERSION.getString()
+                                    }
+                                    .onFailure { th ->
+                                        th.printStackTrace()
+                                        withContext(Dispatchers.Main) {
+                                            context.makeToast(
+                                                App.context.getString(R.string.yt_dlp_update_fail)
+                                            )
+                                        }
+                                    }
+                                    .onSuccess {
+                                        withContext(Dispatchers.Main) {
+                                            context.makeToast(
+                                                context.getString(R.string.yt_dlp_up_to_date) +
+                                                    " (${YT_DLP_VERSION.getString()})"
+                                            )
+                                        }
+                                    }
+                                isUpdating = false
+                            }
+                        },
+                        onClickLabel = stringResource(id = R.string.update),
+                        trailingIcon = {
+                            IconButton(onClick = { showYtdlpDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Settings,
+                                    contentDescription = stringResource(id = R.string.open_settings),
+                                )
+                            }
+                        },
+                    )
+                    if (showYtdlpDialog) {
+                        YtdlpUpdateChannelDialog(onDismissRequest = { showYtdlpDialog = false })
+                    }
+                }
+            }
+
+            item {
+                PreferenceGroup(title = stringResource(R.string.network)) {
+                    PreferenceItem(
+                        title = stringResource(R.string.cookies),
+                        description = stringResource(R.string.cookies_desc),
+                        icon = Icons.Outlined.Cookie,
+                        onClick = { onNavigateTo(Route.COOKIE_PROFILE) },
                     )
                 }
-                PreferenceItem(
-                    title = stringResource(id = R.string.ytdlp_update_action),
-                    description = ytdlpVersion,
-                    leadingIcon = {
-                        if (isUpdating) {
-                            CircularProgressIndicator(
-                                modifier =
-                                    Modifier.padding(start = 8.dp, end = 16.dp)
-                                        .size(24.dp)
-                                        .padding(2.dp)
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Outlined.Update,
-                                contentDescription = null,
-                                modifier = Modifier.padding(start = 8.dp, end = 16.dp).size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    },
-                    onClick = {
-                        scope.launch(Dispatchers.IO) {
-                            runCatching {
-                                    isUpdating = true
-                                    UpdateUtil.updateYtDlp()
-                                    ytdlpVersion = YT_DLP_VERSION.getString()
-                                }
-                                .onFailure { th ->
-                                    th.printStackTrace()
-                                    withContext(Dispatchers.Main) {
-                                        context.makeToast(
-                                            App.context.getString(R.string.yt_dlp_update_fail)
-                                        )
-                                    }
-                                }
-                                .onSuccess {
-                                    withContext(Dispatchers.Main) {
-                                        context.makeToast(
-                                            context.getString(R.string.yt_dlp_up_to_date) +
-                                                " (${YT_DLP_VERSION.getString()})"
-                                        )
-                                    }
-                                }
-                            isUpdating = false
-                        }
-                    },
-                    onClickLabel = stringResource(id = R.string.update),
-                    trailingIcon = {
-                        IconButton(onClick = { showYtdlpDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = stringResource(id = R.string.open_settings),
-                            )
-                        }
-                    },
-                )
-                if (showYtdlpDialog) {
-                    YtdlpUpdateChannelDialog(onDismissRequest = { showYtdlpDialog = false })
-                }
             }
 
-            item { PreferenceSubtitle(text = stringResource(R.string.network)) }
             item {
-                PreferenceItem(
-                    title = stringResource(R.string.cookies),
-                    description = stringResource(R.string.cookies_desc),
-                    icon = Icons.Outlined.Cookie,
-                    onClick = { onNavigateTo(Route.COOKIE_PROFILE) },
-                )
-            }
-            item { PreferenceSubtitle(text = stringResource(R.string.download_directory)) }
-            item {
-                var restrictFilenames by RESTRICT_FILENAMES.booleanState
-                PreferenceSwitch(
-                    title = stringResource(id = R.string.restrict_filenames),
-                    icon = Icons.Outlined.Spellcheck,
-                    description = stringResource(id = R.string.restrict_filenames_desc),
-                    isChecked = restrictFilenames,
-                ) {
-                    restrictFilenames = !restrictFilenames
-                    RESTRICT_FILENAMES.updateBoolean(restrictFilenames)
+                PreferenceGroup(title = stringResource(R.string.download_directory)) {
+                    var restrictFilenames by RESTRICT_FILENAMES.booleanState
+                    PreferenceSwitch(
+                        title = stringResource(id = R.string.restrict_filenames),
+                        icon = Icons.Outlined.Spellcheck,
+                        description = stringResource(id = R.string.restrict_filenames_desc),
+                        isChecked = restrictFilenames,
+                    ) {
+                        restrictFilenames = !restrictFilenames
+                        RESTRICT_FILENAMES.updateBoolean(restrictFilenames)
+                    }
                 }
             }
         }

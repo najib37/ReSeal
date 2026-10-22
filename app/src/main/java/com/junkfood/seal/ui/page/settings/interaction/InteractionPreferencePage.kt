@@ -2,7 +2,6 @@ package com.junkfood.seal.ui.page.settings.interaction
 
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -17,8 +16,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.DOWNLOAD_TYPE_INITIALIZATION
 import com.junkfood.seal.util.PreferenceUtil.getInt
 import com.junkfood.seal.util.PreferenceUtil.updateInt
@@ -38,7 +38,7 @@ fun InteractionPreferencePage(modifier: Modifier = Modifier, onBack: () -> Unit)
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(text = stringResource(id = R.string.interface_and_interaction)) },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { BackButton(onClick = onBack) },
@@ -47,20 +47,20 @@ fun InteractionPreferencePage(modifier: Modifier = Modifier, onBack: () -> Unit)
     ) {
         LazyColumn(modifier = Modifier, contentPadding = it) {
             item {
-                PreferenceSubtitle(text = stringResource(id = R.string.settings_before_download))
-            }
-
-            item {
-                PreferenceItem(
-                    title = stringResource(id = R.string.download_type),
-                    description =
-                        when (initialType) {
-                            USE_PREVIOUS_SELECTION ->
-                                stringResource(id = R.string.use_previous_selection)
-                            else -> stringResource(id = R.string.none)
-                        },
+                PreferenceGroup(
+                    title = stringResource(id = R.string.settings_before_download)
                 ) {
-                    showDownloadTypeDialog = true
+                    PreferenceItem(
+                        title = stringResource(id = R.string.download_type),
+                        description =
+                            when (initialType) {
+                                USE_PREVIOUS_SELECTION ->
+                                    stringResource(id = R.string.use_previous_selection)
+                                else -> stringResource(id = R.string.none)
+                            },
+                    ) {
+                        showDownloadTypeDialog = true
+                    }
                 }
             }
         }

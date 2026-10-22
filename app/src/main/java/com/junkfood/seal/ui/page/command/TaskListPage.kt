@@ -115,9 +115,28 @@ fun TaskListPage(onNavigateBack: () -> Unit, onNavigateToDetail: (Int) -> Unit) 
         },
     ) { paddings ->
         val clipboardManager = LocalClipboardManager.current
+        if (Downloader.mutableTaskList.isEmpty()) {
+            Column(
+                modifier = Modifier.padding(paddings).fillMaxSize().padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = stringResource(R.string.no_running_tasks),
+                    style = MaterialTheme.typography.titleMediumEmphasized,
+                )
+                Text(
+                    text = stringResource(R.string.no_running_tasks_hint),
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         LazyColumn(
             modifier = Modifier.padding(paddings),
-            contentPadding = PaddingValues(24.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(

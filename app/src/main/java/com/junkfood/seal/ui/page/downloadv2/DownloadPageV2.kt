@@ -44,7 +44,7 @@ import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.MediumExtendedFloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -311,7 +311,8 @@ private operator fun PaddingValues.plus(other: PaddingValues): PaddingValues {
     )
 }
 
-private const val HeaderSpacingDp = 28
+// Collapsible gap above the header; the Scaffold already pads for the status bar, so keep it small
+private const val HeaderSpacingDp = 8
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -384,7 +385,8 @@ fun DownloadPageImplV2(
             CompositionLocalProvider(LocalOverscrollFactory provides null) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Spacer(Modifier.height(with(LocalDensity.current) { headerOffset.toDp() }))
-                    Header(onMenuOpen = onMenuOpen, modifier = Modifier.padding(horizontal = 16.dp))
+                    // 4dp + the icon button's 12dp inset puts the icon on the 16dp content edge
+                    Header(onMenuOpen = onMenuOpen, modifier = Modifier.padding(horizontal = 4.dp))
                     // Connected button group (M3 Expressive): the checked item morphs to a pill
                     Row(
                         modifier =
@@ -596,7 +598,7 @@ private fun HeaderCompact(modifier: Modifier = Modifier, onMenuOpen: () -> Unit)
 @Composable
 private fun HeaderExpanded(modifier: Modifier = Modifier) {
     Row(modifier = modifier.height(64.dp), verticalAlignment = Alignment.CenterVertically) {
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             stringResource(R.string.download_queue),
             style = MaterialTheme.typography.headlineSmallEmphasized,
@@ -611,8 +613,8 @@ fun FABs(
     expanded: Boolean = true,
     downloadCallback: () -> Unit = {},
 ) {
-    // Expressive medium extended FAB: the label collapses away while the list scrolls
-    MediumExtendedFloatingActionButton(
+    // Standard-size extended FAB (the medium one dwarfed the page); collapses while scrolling
+    ExtendedFloatingActionButton(
         onClick = downloadCallback,
         expanded = expanded,
         icon = {
@@ -622,7 +624,7 @@ fun FABs(
             )
         },
         text = { Text(stringResource(R.string.download)) },
-        modifier = modifier.padding(vertical = 6.dp),
+        modifier = modifier,
     )
 }
 

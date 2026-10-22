@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Cookie
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
@@ -40,7 +41,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -83,9 +83,11 @@ import com.junkfood.seal.ui.component.DialogSwitchItem
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.HelpDialog
 import com.junkfood.seal.ui.component.PasteFromClipBoardButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceItemVariant
 import com.junkfood.seal.ui.component.PreferenceSwitchWithContainer
 import com.junkfood.seal.ui.component.SealDialog
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.component.TextButtonWithIcon
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.ui.theme.generateLabelColor
@@ -195,7 +197,7 @@ fun CookieProfilePage(
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.cookies)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 actions = {
@@ -289,41 +291,43 @@ fun CookieProfilePage(
                     },
                 )
             }
-            itemsIndexed(cookies) { _, item ->
-                PreferenceItemVariant(
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    title = item.url,
-                    onClick = {
-                        cookiesViewModel.setEditingProfile(item)
-                        showEditDialog = true
-                    },
-                    onClickLabel = stringResource(id = R.string.edit),
-                    onLongClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        cookiesViewModel.setEditingProfile(item)
-                        showDeleteDialog = true
-                    },
-                    onLongClickLabel = stringResource(R.string.remove),
-                )
-            }
-
+            // Saved profiles and the "generate" action form one segmented group
             item {
-                PreferenceItemVariant(
-                    title = stringResource(id = R.string.generate_new_cookies),
-                    icon = Icons.Outlined.Add,
-                ) {
-                    cookiesViewModel.setEditingProfile()
-                    showEditDialog = true
+                PreferenceGroup(modifier = Modifier.padding(top = 8.dp)) {
+                    cookies.forEach { item ->
+                        PreferenceItemVariant(
+                            title = item.url,
+                            icon = Icons.Outlined.Language,
+                            onClick = {
+                                cookiesViewModel.setEditingProfile(item)
+                                showEditDialog = true
+                            },
+                            onClickLabel = stringResource(id = R.string.edit),
+                            onLongClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                cookiesViewModel.setEditingProfile(item)
+                                showDeleteDialog = true
+                            },
+                            onLongClickLabel = stringResource(R.string.remove),
+                        )
+                    }
+                    PreferenceItemVariant(
+                        title = stringResource(id = R.string.generate_new_cookies),
+                        icon = Icons.Outlined.Add,
+                    ) {
+                        cookiesViewModel.setEditingProfile()
+                        showEditDialog = true
+                    }
                 }
             }
             item {
-                androidx.compose.material3.HorizontalDivider()
                 val cookiesCount = cookieList.size
                 val siteCount = cookieList.distinctBy { it.domain }.size
+                // Footer note, inset like the group titles
                 Text(
                     text = stringResource(R.string.cookies_in_database, cookiesCount, siteCount),
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

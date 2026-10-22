@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForwardIos
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -45,9 +44,10 @@ import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceSingleChoiceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferencesHintCard
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.page.settings.about.weblate
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.util.LocaleLanguageCodeMap
@@ -155,7 +155,7 @@ private fun LanguagePageImpl(
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(modifier = Modifier, text = stringResource(id = R.string.language))
                 },
@@ -176,41 +176,38 @@ private fun LanguagePageImpl(
                 }
 
                 if (suggestedLocales.isNotEmpty()) {
+                    item {
+                        PreferenceGroup(title = stringResource(id = R.string.suggested)) {
+                            if (!suggestedLocales.contains(Locale.getDefault())) {
+                                PreferenceSingleChoiceItem(
+                                    text = stringResource(id = R.string.follow_system),
+                                    selected = !suggestedLocales.contains(selectedLocale),
+                                ) {
+                                    onLanguageSelected(null)
+                                }
+                            }
 
-                    item { PreferenceSubtitle(text = stringResource(id = R.string.suggested)) }
-
-                    if (!suggestedLocales.contains(Locale.getDefault())) {
-                        item {
-                            PreferenceSingleChoiceItem(
-                                text = stringResource(id = R.string.follow_system),
-                                selected = !suggestedLocales.contains(selectedLocale),
-                            ) {
-                                onLanguageSelected(null)
+                            for (locale in suggestedLocales) {
+                                PreferenceSingleChoiceItem(
+                                    text = locale.toDisplayName(),
+                                    selected = selectedLocale == locale,
+                                ) {
+                                    onLanguageSelected(locale)
+                                }
                             }
                         }
                     }
+                }
 
-                    for (locale in suggestedLocales) {
-                        item {
+                item {
+                    PreferenceGroup(title = stringResource(id = R.string.all_languages)) {
+                        for (locale in otherLocales) {
                             PreferenceSingleChoiceItem(
                                 text = locale.toDisplayName(),
                                 selected = selectedLocale == locale,
                             ) {
                                 onLanguageSelected(locale)
                             }
-                        }
-                    }
-                }
-
-                item { PreferenceSubtitle(text = stringResource(id = R.string.all_languages)) }
-
-                for (locale in otherLocales) {
-                    item {
-                        PreferenceSingleChoiceItem(
-                            text = locale.toDisplayName(),
-                            selected = selectedLocale == locale,
-                        ) {
-                            onLanguageSelected(locale)
                         }
                     }
                 }

@@ -15,7 +15,6 @@ import androidx.compose.material.icons.outlined.VolunteerActivism
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,8 +47,10 @@ import com.junkfood.seal.App.Companion.packageInfo
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.ConfirmButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceItem
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.AUTO_UPDATE
 import com.junkfood.seal.util.PreferenceUtil
 import com.junkfood.seal.util.ToastUtil
@@ -102,7 +103,7 @@ fun AboutPage(
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.about)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 scrollBehavior = scrollBehavior,
@@ -111,97 +112,76 @@ fun AboutPage(
         content = {
             LazyColumn(modifier = Modifier.padding(it)) {
                 item {
-                    PreferenceItem(
-                        title = stringResource(R.string.readme),
-                        description = stringResource(R.string.readme_desc),
-                        icon = Icons.Outlined.Description,
-                    ) {
-                        openUrl(repoUrl)
-                    }
-                }
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.release),
-                        description = stringResource(R.string.release_desc),
-                        icon = Icons.Outlined.NewReleases,
-                    ) {
-                        openUrl(releaseURL)
-                    }
-                }
-                /*            item {
-                    PreferenceItem(
-                        title = stringResource(R.string.github_issue),
-                        description = stringResource(R.string.github_issue_desc),
-                        icon = Icons.Outlined.ContactSupport,
-                    ) { openUrl(githubIssueUrl) }
-                }*/
-                item {
-                    PreferenceItem(
-                        title = stringResource(id = R.string.sponsor),
-                        description = stringResource(id = R.string.sponsor_desc),
-                        icon = Icons.Outlined.VolunteerActivism,
-                    ) {
-                        //                    openUrl(githubSponsor)
-                        onNavigateToDonatePage()
-                    }
-                }
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.telegram_channel),
-                        description = telegramChannelUrl,
-                        icon = painterResource(id = R.drawable.icons8_telegram_app),
-                    ) {
-                        openUrl(telegramChannelUrl)
-                    }
-                }
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.matrix_space),
-                        description = matrixSpaceUrl,
-                        icon = painterResource(id = R.drawable.icons8_matrix),
-                    ) {
-                        openUrl(matrixSpaceUrl)
-                    }
-                }
-                item {
-                    PreferenceItem(
-                        title = stringResource(id = R.string.credits),
-                        description = stringResource(id = R.string.credits_desc),
-                        icon = Icons.Outlined.AutoAwesome,
-                    ) {
-                        onNavigateToCreditsPage()
-                    }
-                }
-                item {
-                    PreferenceSwitchWithDivider(
-                        title = stringResource(R.string.auto_update),
-                        description = stringResource(R.string.check_for_updates_desc),
-                        icon =
-                            if (isAutoUpdateEnabled) Icons.Outlined.Update
-                            else Icons.Outlined.UpdateDisabled,
-                        isChecked = isAutoUpdateEnabled,
-                        isSwitchEnabled = !App.isFDroidBuild(),
-                        onClick = onNavigateToUpdatePage,
-                        onChecked = {
-                            isAutoUpdateEnabled = !isAutoUpdateEnabled
-                            PreferenceUtil.updateValue(AUTO_UPDATE, isAutoUpdateEnabled)
-                        },
-                    )
-                }
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.version),
-                        description = versionName,
-                        icon = Icons.Outlined.Info,
-                    ) {
-                        clipboardManager.setText(AnnotatedString(info))
-                        ToastUtil.makeToast(R.string.info_copied)
-                    }
-                }
-                item {
-                    PreferenceItem(title = "Package name", description = context.packageName) {
-                        clipboardManager.setText(AnnotatedString(context.packageName))
-                        ToastUtil.makeToast(R.string.info_copied)
+                    PreferenceGroup {
+                        PreferenceItem(
+                            title = stringResource(R.string.readme),
+                            description = stringResource(R.string.readme_desc),
+                            icon = Icons.Outlined.Description,
+                        ) {
+                            openUrl(repoUrl)
+                        }
+                        PreferenceItem(
+                            title = stringResource(R.string.release),
+                            description = stringResource(R.string.release_desc),
+                            icon = Icons.Outlined.NewReleases,
+                        ) {
+                            openUrl(releaseURL)
+                        }
+                        PreferenceItem(
+                            title = stringResource(id = R.string.sponsor),
+                            description = stringResource(id = R.string.sponsor_desc),
+                            icon = Icons.Outlined.VolunteerActivism,
+                        ) {
+                            //                    openUrl(githubSponsor)
+                            onNavigateToDonatePage()
+                        }
+                        PreferenceItem(
+                            title = stringResource(R.string.telegram_channel),
+                            description = telegramChannelUrl,
+                            icon = painterResource(id = R.drawable.icons8_telegram_app),
+                        ) {
+                            openUrl(telegramChannelUrl)
+                        }
+                        PreferenceItem(
+                            title = stringResource(R.string.matrix_space),
+                            description = matrixSpaceUrl,
+                            icon = painterResource(id = R.drawable.icons8_matrix),
+                        ) {
+                            openUrl(matrixSpaceUrl)
+                        }
+                        PreferenceItem(
+                            title = stringResource(id = R.string.credits),
+                            description = stringResource(id = R.string.credits_desc),
+                            icon = Icons.Outlined.AutoAwesome,
+                        ) {
+                            onNavigateToCreditsPage()
+                        }
+                        PreferenceSwitchWithDivider(
+                            title = stringResource(R.string.auto_update),
+                            description = stringResource(R.string.check_for_updates_desc),
+                            icon =
+                                if (isAutoUpdateEnabled) Icons.Outlined.Update
+                                else Icons.Outlined.UpdateDisabled,
+                            isChecked = isAutoUpdateEnabled,
+                            isSwitchEnabled = !App.isFDroidBuild(),
+                            onClick = onNavigateToUpdatePage,
+                            onChecked = {
+                                isAutoUpdateEnabled = !isAutoUpdateEnabled
+                                PreferenceUtil.updateValue(AUTO_UPDATE, isAutoUpdateEnabled)
+                            },
+                        )
+                        PreferenceItem(
+                            title = stringResource(R.string.version),
+                            description = versionName,
+                            icon = Icons.Outlined.Info,
+                        ) {
+                            clipboardManager.setText(AnnotatedString(info))
+                            ToastUtil.makeToast(R.string.info_copied)
+                        }
+                        PreferenceItem(title = "Package name", description = context.packageName) {
+                            clipboardManager.setText(AnnotatedString(context.packageName))
+                            ToastUtil.makeToast(R.string.info_copied)
+                        }
                     }
                 }
             }

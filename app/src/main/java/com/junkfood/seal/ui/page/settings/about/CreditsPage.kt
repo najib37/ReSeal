@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -26,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.CreditItem
+import com.junkfood.seal.ui.component.PreferenceGroup
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.svg.DynamicColorImageVectors
 import com.junkfood.seal.ui.svg.drawablevectors.coder
 
@@ -102,7 +103,7 @@ fun CreditsPage(onNavigateBack: () -> Unit) {
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.credits)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 scrollBehavior = scrollBehavior,
@@ -129,8 +130,12 @@ fun CreditsPage(onNavigateBack: () -> Unit) {
                         )
                     }
                 }
-                items(creditsList) { item ->
-                    CreditItem(title = item.title, license = item.license) { openUrl(item.url) }
+                item {
+                    PreferenceGroup {
+                        creditsList.forEach { item ->
+                            CreditItem(title = item.title, license = item.license) { openUrl(item.url) }
+                        }
+                    }
                 }
             }
         },

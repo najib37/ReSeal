@@ -58,10 +58,8 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -100,7 +98,7 @@ import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.component.SlideUpPage
 import com.junkfood.seal.ui.component.rememberSlideUpPageState
 import com.junkfood.seal.ui.component.SingleChoiceChip
-import com.junkfood.seal.ui.component.SingleChoiceSegmentedButton
+import com.junkfood.seal.ui.component.ConnectedChoiceRow
 import com.junkfood.seal.ui.component.VideoFilterChip
 import com.junkfood.seal.ui.page.command.TemplatePickerDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.ActionButton.Download
@@ -886,8 +884,9 @@ private fun SingleChoiceItem(
         )
     val color by
         animateColorAsState(
+            // Unselected must contrast with the sheet, which is itself surfaceContainerLow
             if (selected) MaterialTheme.colorScheme.secondaryContainer
-            else MaterialTheme.colorScheme.surfaceContainerLow,
+            else MaterialTheme.colorScheme.surfaceContainerHigh,
             label = "",
         )
 
@@ -962,16 +961,13 @@ private fun DownloadTypeSelectionGroup(
             }
         }
     } else {
-        SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
-            typeEntries.forEachIndexed { index, type ->
-                SingleChoiceSegmentedButton(
-                    selected = selectedType == type,
-                    onClick = { onSelect(type) },
-                    shape = SegmentedButtonDefaults.itemShape(index, typeCount),
-                ) {
-                    Text(text = type.label())
-                }
-            }
+        ConnectedChoiceRow(
+            options = typeEntries,
+            selected = selectedType,
+            onSelect = onSelect,
+            modifier = modifier,
+        ) { type ->
+            Text(text = type.label())
         }
     }
 }

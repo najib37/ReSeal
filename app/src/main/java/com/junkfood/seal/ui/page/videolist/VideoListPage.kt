@@ -42,7 +42,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -95,8 +94,16 @@ import com.junkfood.seal.ui.component.ConfirmButton
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.MediaListItem
 import com.junkfood.seal.ui.component.SealDialog
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.component.SealSearchBar
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.junkfood.seal.download.DownloaderV2
+import com.junkfood.seal.download.Task
 import com.junkfood.seal.ui.component.VideoFilterChip
+import com.junkfood.seal.ui.page.downloadv2.ListItemStateText
+import com.junkfood.seal.ui.page.downloadv2.VideoListItem as TaskListItem
+import org.koin.compose.koinInject
 import com.junkfood.seal.ui.svg.DynamicColorImageVectors
 import com.junkfood.seal.ui.svg.drawablevectors.videoSteaming
 import com.junkfood.seal.util.AUDIO_REGEX
@@ -108,6 +115,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
+
+/** Which downloads the Downloads page lists: everything, only in-progress, or only history. */
+private enum class StatusFilter {
+    All,
+    Downloading,
+    Finished,
+}
 
 fun DownloadedVideoInfo.filterByType(
     videoFilter: Boolean = false,
@@ -134,7 +148,11 @@ private const val TAG = "VideoListPage"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBack: () -> Unit) {
+fun VideoListPage(
+    viewModel: VideoListViewModel = koinViewModel(),
+    downloader: DownloaderV2 = koinInject(),
+    onNavigateBack: () -> Unit,
+) {
     val viewState by viewModel.stateFlow.collectAsStateWithLifecycle()
     val fullVideoList by viewModel.videoListFlow.collectAsStateWithLifecycle(emptyList())
     val searchedVideoList by
@@ -143,8 +161,20 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
     val videoList = if (viewState.isSearching) searchedVideoList else fullVideoList
     val filterSet by viewModel.filterSetFlow.collectAsState(mutableSetOf())
 
+    // In-progress tasks live only in the downloader; completed ones are already in the history DB
+    val taskStateMap = downloader.getTaskStateMap()
+    val activeTasks by remember {
+        derivedStateOf {
+            taskStateMap.toList().filter { (_, state) ->
+                state.downloadState !is Task.DownloadState.Completed
+            }
+        }
+    }
+    var statusFilter by rememberSaveable { mutableStateOf(StatusFilter.All) }
+    val hasContent = fullVideoList.isNotEmpty() || activeTasks.isNotEmpty()
+
     val scrollBehavior =
-        if (fullVideoList.isNotEmpty())
+        if (hasContent)
             TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
                 rememberTopAppBarState(),
                 canScroll = { true },
@@ -178,6 +208,28 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
     fun FilterChips(modifier: Modifier = Modifier) {
         Row(modifier.horizontalScroll(rememberScrollState()).selectableGroup()) {
             Row(modifier = Modifier.padding(horizontal = 8.dp)) {
+                StatusFilter.entries.forEach { filter ->
+                    VideoFilterChip(
+                        selected = statusFilter == filter,
+                        onClick = { statusFilter = filter },
+                        label =
+                            when (filter) {
+                                StatusFilter.All -> stringResource(R.string.all)
+                                StatusFilter.Downloading ->
+                                    stringResource(R.string.status_downloading) +
+                                        if (activeTasks.isNotEmpty()) " ${activeTasks.size}"
+                                        else ""
+                                StatusFilter.Finished -> stringResource(R.string.status_completed)
+                            },
+                    )
+                }
+                VerticalDivider(
+                    modifier =
+                        Modifier.padding(horizontal = 6.dp)
+                            .height(24.dp)
+                            .align(Alignment.CenterVertically),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
                 VideoFilterChip(
                     selected = viewState.audioFilter,
                     onClick = { viewModel.clickAudioFilter() },
@@ -285,7 +337,7 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(modifier = Modifier, text = stringResource(R.string.downloads_history))
                 },
@@ -437,7 +489,7 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
         },
         snackbarHost = { SnackbarHost(hostState = hostState) },
     ) { innerPadding ->
-        if (fullVideoList.isEmpty())
+        if (!hasContent)
             Box(modifier = Modifier.fillMaxSize()) {
                 val painter =
                     rememberVectorPainter(image = DynamicColorImageVectors.videoSteaming())
@@ -468,7 +520,7 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
             }
         val span: (LazyGridItemSpanScope) -> GridItemSpan = { GridItemSpan(cellCount) }
         LazyColumn(modifier = Modifier, state = lazyListState, contentPadding = innerPadding) {
-            if (fullVideoList.isNotEmpty()) {
+            if (hasContent) {
                 item {
                     Column {
                         AnimatedVisibility(visible = viewState.isSearching) {
@@ -484,7 +536,24 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
                     }
                 }
             }
-            for (info in videoList) {
+            if (statusFilter != StatusFilter.Finished) {
+                items(items = activeTasks, key = { (task, _) -> task.id }) { (_, state) ->
+                    // "More" opens the queue, where cancel/retry/share live
+                    TaskListItem(
+                        modifier =
+                            Modifier.padding(horizontal = 16.dp, vertical = 8.dp).animateItem(),
+                        viewState = state.viewState,
+                        stateIndicator = {
+                            ListItemStateText(
+                                modifier = Modifier.padding(top = 3.dp),
+                                downloadState = state.downloadState,
+                            )
+                        },
+                        onButtonClick = onNavigateBack,
+                    )
+                }
+            }
+            for (info in if (statusFilter == StatusFilter.Downloading) emptyList() else videoList) {
 
                 item(key = info.id, contentType = { info.videoPath.contains(AUDIO_REGEX) }) {
                     with(info) {
