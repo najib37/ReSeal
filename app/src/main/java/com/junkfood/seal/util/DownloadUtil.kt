@@ -242,6 +242,7 @@ object DownloadUtil {
         val forceIpv4: Boolean,
         val mergeAudioStream: Boolean,
         val mergeToMkv: Boolean,
+        val preferOriginalAudio: Boolean = false,
     ) {
         companion object {
             val EMPTY =
@@ -297,6 +298,7 @@ object DownloadUtil {
                     mergeAudioStream = false,
                     mergeToMkv = false,
                     useCustomAudioPreset = false,
+                    preferOriginalAudio = false,
                 )
 
             fun createFromPreferences(): DownloadPreferences {
@@ -356,6 +358,7 @@ object DownloadUtil {
                     mergeAudioStream = false,
                     mergeToMkv =
                         (downloadSubtitle && embedSubtitle) || MERGE_OUTPUT_MKV.getBoolean(),
+                    preferOriginalAudio = PREFER_ORIGINAL_AUDIO.getBoolean(),
                 )
             }
         }
@@ -547,8 +550,27 @@ object DownloadUtil {
         sorter: String,
     ) =
         preferences.run {
-            if (formatSorting && sortingFields.isNotEmpty()) addOption("-S", sortingFields)
-            else if (sorter.isNotEmpty()) addOption("-S", sorter) else {}
+            if (formatSorting && sortingFields.isNotEmpty()) {
+                val finalSorter =
+                    if (preferOriginalAudio && !sortingFields.contains("lang")) {
+                        connectWithDelimiter("lang", sortingFields, delimiter = ",")
+                    } else {
+                        sortingFields
+                    }
+                addOption("-S", finalSorter)
+            } else {
+                val finalSorter =
+                    if (preferOriginalAudio) {
+                        if (sorter.isNotEmpty()) {
+                            connectWithDelimiter("lang", sorter, delimiter = ",")
+                        } else {
+                            "lang"
+                        }
+                    } else {
+                        sorter
+                    }
+                if (finalSorter.isNotEmpty()) addOption("-S", finalSorter)
+            }
         }
 
     @CheckResult
