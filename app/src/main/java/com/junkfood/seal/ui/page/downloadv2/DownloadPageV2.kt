@@ -186,7 +186,10 @@ sealed interface UiAction {
 
     data object Cancel : UiAction
 
+    /** Asks the user to confirm, offering to delete the task's files too */
     data object Delete : UiAction
+
+    data class Remove(val deleteFiles: Boolean) : UiAction
 
     data object Resume : UiAction
 
@@ -200,11 +203,50 @@ fun rememberTaskActionHandler(downloader: DownloaderV2): (Task, UiAction) -> Uni
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val uriHandler = LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    val taskStateMap = downloader.getTaskStateMap()
+    var taskPendingRemoval by remember { mutableStateOf<Task?>(null) }
+
+    fun removeTask(task: Task, deleteFiles: Boolean) {
+        val state = taskStateMap[task]
+        if (state?.downloadState is Task.DownloadState.Cancelable) downloader.cancel(task)
+        downloader.remove(task)
+        if (!deleteFiles || state == null) return
+        scope.launch(Dispatchers.IO) {
+            when (val downloadState = state.downloadState) {
+                is Task.DownloadState.Completed ->
+                    downloadState.filePath?.let { FileUtil.deleteFile(it) }
+                else ->
+                    with(FileUtil) {
+                        context.deleteTempFilesForVideo(
+                            videoId = state.videoInfo?.id,
+                            title = state.videoInfo?.title,
+                        )
+                    }
+            }
+        }
+    }
+
+    taskPendingRemoval?.let { task ->
+        val state = taskStateMap[task]
+        if (state == null) {
+            taskPendingRemoval = null
+        } else {
+            RemoveTaskDialog(
+                title = state.viewState.title,
+                isCompleted = state.downloadState is Task.DownloadState.Completed,
+                onRemoveConfirm = { removeTask(task, it) },
+                onDismissRequest = { taskPendingRemoval = null },
+            )
+        }
+    }
+
     return { task, action ->
         view.slightHapticFeedback()
         when (action) {
             UiAction.Cancel -> downloader.cancel(task)
-            UiAction.Delete -> downloader.remove(task)
+            UiAction.Delete -> taskPendingRemoval = task
+            is UiAction.Remove -> removeTask(task, action.deleteFiles)
             UiAction.Resume -> downloader.restart(task)
             is UiAction.CopyErrorReport -> {
                 clipboardManager.setText(
@@ -471,13 +513,13 @@ fun DownloadPageImplV2(
                                     taskDownloadStateMap
                                         .filter { Filter.Finished.predict(it.toPair()) }
                                         .keys
-                                        .forEach { onActionPost(it, UiAction.Delete) }
+                                        .forEach { onActionPost(it, UiAction.Remove(false)) }
                                 },
                                 onClearFailed = {
                                     taskDownloadStateMap
                                         .filter { Filter.Canceled.predict(it.toPair()) }
                                         .keys
-                                        .forEach { onActionPost(it, UiAction.Delete) }
+                                        .forEach { onActionPost(it, UiAction.Remove(false)) }
                                 },
                             )
                         }

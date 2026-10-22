@@ -198,6 +198,27 @@ object FileUtil {
         return count
     }
 
+    /**
+     * Deletes partial/temporary files left behind by an unfinished download: the per-video SD
+     * card staging dir, plus any file in the shared temp dirs whose name contains [title].
+     */
+    fun Context.deleteTempFilesForVideo(videoId: String?, title: String?): Int {
+        var count = 0
+        videoId?.takeIf { it.isNotBlank() }?.let { id ->
+            getSdcardTempDir(id).takeIf { it.exists() }?.run {
+                count += walkTopDown().count { it.isFile }
+                deleteRecursively()
+            }
+        }
+        val name = title?.takeIf { it.isNotBlank() } ?: return count
+        listOf(getExternalTempDir(), getInternalTempDir()).forEach { dir ->
+            dir.walkTopDown()
+                .filter { it.isFile && !it.isHidden && it.name.contains(name) }
+                .forEach { if (it.delete()) count++ }
+        }
+        return count
+    }
+
     fun Context.getConfigDirectory(): File = cacheDir
 
     fun Context.getConfigFile(suffix: String = "") = File(getConfigDirectory(), "config$suffix.txt")

@@ -793,15 +793,25 @@ fun VideoListPage(
             onDismissRequest = { showClearAllDialog = false },
             title = { Text("Clear All Downloads?") },
             text = {
-                Text("This will delete all ${fullVideoList.size} downloaded items. This action cannot be undone.")
+                Column {
+                    Text(
+                        stringResource(R.string.delete_multiple_items_msg)
+                            .format(fullVideoList.size)
+                    )
+                    CheckBoxItem(
+                        text = stringResource(R.string.delete_file),
+                        checked = deleteFile,
+                    ) {
+                        deleteFile = !deleteFile
+                    }
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        // Delete all videos from the database
                         viewModel.deleteDownloadHistory(
                             infoList = fullVideoList,
-                            deleteFile = true  // Also delete files
+                            deleteFile = deleteFile,
                         )
                         showClearAllDialog = false
                     }
