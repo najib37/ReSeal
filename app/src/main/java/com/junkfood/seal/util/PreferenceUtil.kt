@@ -85,6 +85,10 @@ const val UPDATE_CHANNEL = "update_channel"
 const val PRIVATE_MODE = "private_mode"
 private const val DYNAMIC_COLOR = "dynamic_color"
 const val CELLULAR_DOWNLOAD = "cellular_download"
+// Fast download (configure sheet): optimistic sliders, no format probing before the task
+const val FAST_DOWNLOAD = "fast_download"
+const val FAST_DOWNLOAD_HEIGHT = "fast_download_height"
+const val FAST_DOWNLOAD_AUDIO = "fast_download_audio"
 const val RATE_LIMIT = "rate_limit"
 const val MAX_RATE = "max_rate"
 private const val HIGH_CONTRAST = "high_contrast"
@@ -204,6 +208,7 @@ private val BooleanPreferenceDefaults =
         FORMAT_SELECTION to true,
         CONFIGURE to true,
         CELLULAR_DOWNLOAD to false,
+        FAST_DOWNLOAD to true,
         YT_DLP_AUTO_UPDATE to true,
         NOTIFICATION to true,
         NOTIFICATION_PERMISSION_REQUESTED to false,
@@ -215,6 +220,8 @@ private val BooleanPreferenceDefaults =
 private val IntPreferenceDefaults =
     mapOf(
         TEMPLATE_ID to 0,
+        FAST_DOWNLOAD_HEIGHT to 1080,
+        FAST_DOWNLOAD_AUDIO to 2, // 0 low, 1 medium, 2 high
         CONCURRENT to 8,
         LANGUAGE to SYSTEM_DEFAULT,
         PALETTE_STYLE to 0,

@@ -37,11 +37,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
-import com.junkfood.seal.util.DownloadUtil
+import androidx.compose.material3.Switch
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import com.junkfood.seal.App
+import com.junkfood.seal.util.CELLULAR_DOWNLOAD
+import com.junkfood.seal.util.PreferenceUtil.getBoolean
+import com.junkfood.seal.util.PreferenceUtil.updateBoolean
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import com.junkfood.seal.ui.common.LocalFixedColorRoles
@@ -86,18 +92,6 @@ import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.Action
 import com.junkfood.seal.ui.theme.ErrorTonalPalettes
 import com.junkfood.seal.util.findURLsFromString
-
-private val FAST_HEIGHTS = listOf(1080, 720, 480)
-
-/** Saved preferences with a resolution-first sort; `null` height means audio only (M4A). */
-private fun fastDownloadPreferences(height: Int?) =
-    DownloadUtil.DownloadPreferences.createFromPreferences().copy(
-        extractAudio = height == null,
-        formatIdString = "",
-        formatSorting = true,
-        sortingFields =
-            if (height != null) "res:$height,ext:mp4:m4a,vcodec:h264" else "ext:m4a,abr",
-    )
 
 @Composable
 fun InputUrlPage(
@@ -239,37 +233,40 @@ private fun InputUrlPageImpl(
             }
         }
 
-        // Fast download: skips the configure/format steps. yt-dlp sorts by resolution first, so it
-        // takes the best format at or below the chosen height (falling back to the next lower one)
-        // and prefers MP4/M4A + H.264; the task's probe is reused for the download.
-        Text(
-            text = stringResource(R.string.fast_download),
-            style = MaterialTheme.typography.labelLargeEmphasized,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp),
-        )
-        Row(
-            modifier =
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(
-                    horizontal = 24.dp
-                ),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            (FAST_HEIGHTS.map { it } + listOf(null)).forEach { height ->
-                FilledTonalButton(
-                    onClick = {
-                        onActionPost(
-                            Action.DownloadWithPreset(
-                                urlList = listOf(url),
-                                preferences = fastDownloadPreferences(height),
-                            )
+        // On mobile data with cellular downloads off, queued tasks would just fail; offer the
+        // setting right here instead of only in Settings > Network
+        var allowCellular by remember { mutableStateOf(CELLULAR_DOWNLOAD.getBoolean()) }
+        val isMetered = remember { App.connectivityManager.isActiveNetworkMetered }
+        if (isMetered) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 16.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .toggleable(
+                            value = allowCellular,
+                            role = Role.Switch,
+                            onValueChange = {
+                                allowCellular = it
+                                CELLULAR_DOWNLOAD.updateBoolean(it)
+                            },
                         )
-                    },
-                    enabled = url.isNotBlank(),
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Text(if (height != null) "${height}p" else stringResource(R.string.audio))
-                }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Outlined.SignalCellularAlt,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 16.dp),
+                )
+                Text(
+                    text = stringResource(R.string.download_with_cellular),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(checked = allowCellular, onCheckedChange = null)
             }
         }
 

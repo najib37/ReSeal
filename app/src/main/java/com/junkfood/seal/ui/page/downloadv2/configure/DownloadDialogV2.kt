@@ -98,7 +98,12 @@ import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.component.SlideUpPage
 import com.junkfood.seal.ui.component.rememberSlideUpPageState
 import com.junkfood.seal.ui.component.SingleChoiceChip
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.LoadingIndicator
+import com.junkfood.seal.util.FAST_DOWNLOAD
+import com.junkfood.seal.util.FAST_DOWNLOAD_AUDIO
+import com.junkfood.seal.util.FAST_DOWNLOAD_HEIGHT
+import com.junkfood.seal.util.PreferenceUtil.getInt
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.ui.semantics.Role
@@ -533,6 +538,16 @@ private fun ConfigurePage(
     val scope = rememberCoroutineScope()
     var selectedType by remember(config) { mutableStateOf(config.downloadType) }
     var useFormatSelection by remember(config) { mutableStateOf(config.useFormatSelection) }
+    // Fast download: optimistic quality sliders, starts the task without a format page
+    var useFastDownload by remember { mutableStateOf(FAST_DOWNLOAD.getBoolean()) }
+    var fastHeightIndex by remember {
+        mutableIntStateOf(
+            FAST_HEIGHTS.indexOf(FAST_DOWNLOAD_HEIGHT.getInt()).takeIf { it >= 0 }
+                ?: FAST_HEIGHTS.indexOf(1080)
+        )
+    }
+    var fastAudioLevel by remember { mutableIntStateOf(FAST_DOWNLOAD_AUDIO.getInt()) }
+    val isFastDownload = useFastDownload && !useFormatSelection && selectedType != Playlist
     val canProceed = selectedType in config.typeEntries
 
     var showTemplateSelectionDialog by remember { mutableStateOf(false) }
@@ -567,19 +582,53 @@ private fun ConfigurePage(
                         text = stringResource(id = R.string.format_selection),
                         modifier = Modifier,
                     )
+                    SingleChoiceItem(
+                        title = stringResource(R.string.fast_download),
+                        desc = stringResource(R.string.fast_download_desc),
+                        icon = {
+                            Icon(
+                                Icons.Outlined.Bolt,
+                                null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        selected = isFastDownload,
+                        enabled = selectedType != Playlist,
+                        onClick = {
+                            useFastDownload = true
+                            useFormatSelection = false
+                        },
+                    )
+                    AnimatedVisibility(visible = isFastDownload) {
+                        FastDownloadOptions(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            audioOnly = selectedType == Audio,
+                            heightIndex = fastHeightIndex,
+                            audioLevel = fastAudioLevel,
+                            onHeightIndexChange = { fastHeightIndex = it },
+                            onAudioLevelChange = { fastAudioLevel = it },
+                        )
+                    }
                     Preset(
                         modifier = Modifier,
                         preference = preferences,
-                        selected = !useFormatSelection,
+                        selected = !useFormatSelection && !isFastDownload,
                         downloadType = selectedType,
-                        onClick = { useFormatSelection = false },
-                        showEditIcon = !useFormatSelection && selectedType != Playlist,
+                        onClick = {
+                            useFastDownload = false
+                            useFormatSelection = false
+                        },
+                        showEditIcon =
+                            !useFormatSelection && !isFastDownload && selectedType != Playlist,
                         onEdit = { onPresetEdit(selectedType) },
                     )
                     Custom(
                         selected = useFormatSelection,
                         enabled = selectedType != Playlist,
-                        onClick = { useFormatSelection = true },
+                        onClick = {
+                            useFastDownload = false
+                            useFormatSelection = true
+                        },
                     )
                 } else {
                     if (showTemplateSelectionDialog) {
@@ -643,10 +692,22 @@ private fun ConfigurePage(
                         downloadType = selectedType,
                     )
                 )
+                FAST_DOWNLOAD.updateBoolean(useFastDownload)
+                val presetPreferences = preferences.copy(extractAudio = selectedType == Audio)
                 onActionPost(
                     Action.DownloadWithPreset(
                         urlList = listOf(url),
-                        preferences = preferences.copy(extractAudio = selectedType == Audio),
+                        preferences =
+                            if (isFastDownload) {
+                                FAST_DOWNLOAD_HEIGHT.updateInt(FAST_HEIGHTS[fastHeightIndex])
+                                FAST_DOWNLOAD_AUDIO.updateInt(fastAudioLevel)
+                                presetPreferences.toFastDownload(
+                                    height =
+                                        if (selectedType == Audio) null
+                                        else FAST_HEIGHTS[fastHeightIndex],
+                                    audioLevel = fastAudioLevel,
+                                )
+                            } else presetPreferences,
                     )
                 )
             },

@@ -80,10 +80,6 @@ import com.junkfood.seal.ui.component.ClearButton
 import com.junkfood.seal.ui.component.ConfirmButton
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.FormatItem
-import androidx.compose.material.icons.outlined.AudioFile
-import androidx.compose.material.icons.outlined.VideoFile
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.junkfood.seal.ui.component.ConnectedChoiceRow
 import com.junkfood.seal.ui.component.FormatSubtitle
 import com.junkfood.seal.ui.component.FormatVideoPreview
 import com.junkfood.seal.ui.component.PreferenceInfo
@@ -322,40 +318,6 @@ private fun FormatPageImpl(
     var selectedVideoAudioFormat by remember { mutableIntStateOf(NOT_SELECTED) }
     var selectedVideoOnlyFormat by remember { mutableIntStateOf(NOT_SELECTED) }
     val selectedAudioOnlyFormats = remember { mutableStateListOf<Int>() }
-
-    // Simple mode: two sliders over sensible defaults. Video steps over video-only formats (merged
-    // with an audio-only pick); sites without video-only formats step over muxed formats and the
-    // audio slider is hidden, so muxed and separate streams are never combined.
-    val useMuxedForVideo = videoOnlyFormats.isEmpty()
-    val videoOptions =
-        remember(videoInfo) {
-            if (audioOnly) emptyList()
-            else videoQualityOptions(if (useMuxedForVideo) videoAudioFormats else videoOnlyFormats)
-        }
-    val showAudioSlider = audioOnly || !useMuxedForVideo
-    val audioOptions =
-        remember(videoInfo) { if (showAudioSlider) audioQualityOptions(audioOnlyFormats) else emptyList() }
-    val isSimpleModeAvailable =
-        if (audioOnly) audioOptions.isNotEmpty() else videoOptions.isNotEmpty()
-    var isSimpleMode by rememberSaveable { mutableStateOf(isSimpleModeAvailable) }
-    var videoPosition by rememberSaveable { mutableIntStateOf(videoOptions.lastIndex) }
-    var audioPosition by rememberSaveable { mutableIntStateOf(audioOptions.lastIndex) }
-
-    fun applySimpleSelection() {
-        isSuggestedFormatSelected = false
-        selectedAudioOnlyFormats.clear()
-        selectedVideoOnlyFormat = NOT_SELECTED
-        selectedVideoAudioFormat = NOT_SELECTED
-        videoOptions.getOrNull(videoPosition)?.let {
-            if (useMuxedForVideo) selectedVideoAudioFormat = it.index
-            else selectedVideoOnlyFormat = it.index
-        }
-        audioOptions.getOrNull(audioPosition)?.let { selectedAudioOnlyFormats.add(it.index) }
-    }
-
-    LaunchedEffect(isSimpleMode, videoPosition, audioPosition) {
-        if (isSimpleMode && isSimpleModeAvailable) applySimpleSelection()
-    }
     val context = LocalContext.current
 
     val uriHandler = LocalUriHandler.current
@@ -515,44 +477,6 @@ private fun FormatPageImpl(
                 }
             }
 
-            if (isSimpleModeAvailable) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    ConnectedChoiceRow(
-                        options = listOf(true, false),
-                        selected = isSimpleMode,
-                        onSelect = { isSimpleMode = it },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                    ) { simple ->
-                        Text(stringResource(if (simple) R.string.simple else R.string.advanced))
-                    }
-                }
-            }
-
-            if (isSimpleMode && isSimpleModeAvailable) {
-                if (videoOptions.isNotEmpty())
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        QualitySlider(
-                            title = stringResource(R.string.video_quality),
-                            icon = Icons.Outlined.VideoFile,
-                            options = videoOptions,
-                            selected = videoPosition,
-                            duration = duration,
-                            onSelect = { videoPosition = it },
-                        )
-                    }
-                if (audioOptions.isNotEmpty())
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        QualitySlider(
-                            title = stringResource(R.string.audio_quality),
-                            icon = Icons.Outlined.AudioFile,
-                            options = audioOptions,
-                            selected = audioPosition,
-                            duration = duration,
-                            onSelect = { audioPosition = it },
-                        )
-                    }
-            }
-
             item(span = { GridItemSpan(maxLineSpan) }) {
                 var shouldUpdateClipDuration by remember { mutableStateOf(false) }
 
@@ -612,8 +536,6 @@ private fun FormatPageImpl(
                 }
             }
 
-            // Advanced mode: subtitles plus the full format grids
-            if (!isSimpleMode || !isSimpleModeAvailable) {
             if (suggestedSubtitleMap.isNotEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -834,7 +756,6 @@ private fun FormatPageImpl(
                         applyPaddings = false,
                     )
                 }
-            }
             item { Spacer(modifier = Modifier.height(64.dp)) }
         }
     }

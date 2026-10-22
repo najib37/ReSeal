@@ -19,31 +19,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.junkfood.seal.ui.component.PreferenceLeadingIcon
-import com.junkfood.seal.util.Format
-import com.junkfood.seal.util.toFileSizeText
 import kotlin.math.roundToInt
 
 /**
- * Simple-mode quality picker: a tonal card with an Expressive slider that has a thick track, one
- * stop per [QualityOption]. [selected] is a position in [options], lowest quality first.
+ * Quality picker: a tonal card with an Expressive slider that has a thick track, one stop per
+ * entry of [labels] (lowest quality first). [selected] is a position in [labels].
  */
 @Composable
 fun QualitySlider(
     modifier: Modifier = Modifier,
     title: String,
+    detail: String,
     icon: ImageVector,
-    options: List<QualityOption>,
+    labels: List<String>,
     selected: Int,
-    duration: Double,
     onSelect: (Int) -> Unit,
 ) {
-    val current = options.getOrNull(selected) ?: return
+    val current = labels.getOrNull(selected) ?: return
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.extraLarge)
-                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(20.dp)
     ) {
         Row(
@@ -54,24 +52,24 @@ fun QualitySlider(
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = title, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = current.format.describe(duration),
+                    text = detail,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
-                text = current.label,
+                text = current,
                 style = MaterialTheme.typography.headlineSmallEmphasized,
                 color = MaterialTheme.colorScheme.primary,
             )
         }
-        if (options.size > 1) {
+        if (labels.size > 1) {
             Spacer(Modifier.height(12.dp))
             Slider(
                 value = selected.toFloat(),
                 onValueChange = { onSelect(it.roundToInt()) },
-                valueRange = 0f..options.lastIndex.toFloat(),
-                steps = (options.size - 2).coerceAtLeast(0),
+                valueRange = 0f..labels.lastIndex.toFloat(),
+                steps = (labels.size - 2).coerceAtLeast(0),
                 track = { state ->
                     // Thick ("semi-bold") Expressive track
                     SliderDefaults.Track(sliderState = state, modifier = Modifier.height(16.dp))
@@ -79,33 +77,17 @@ fun QualitySlider(
             )
             Row(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = options.first().label,
+                    text = labels.first(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = options.last().label,
+                    text = labels.last(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
-}
-
-/** "MP4 · AVC1 · 12.3 MB": container, main codec and (estimated) size. */
-@Composable
-private fun Format.describe(duration: Double): String {
-    val codec =
-        (if (vcodec != null && vcodec != "none") vcodec else acodec)
-            .orEmpty()
-            .substringBefore('.')
-            .uppercase()
-    val size =
-        fileSize
-            ?: fileSizeApprox
-            ?: tbr?.takeIf { duration > 0 }?.let { it * 1000 / 8 * duration }
-    return listOfNotNull(ext?.uppercase(), codec.ifEmpty { null }, size?.toFileSizeText())
-        .joinToString(" · ")
 }
