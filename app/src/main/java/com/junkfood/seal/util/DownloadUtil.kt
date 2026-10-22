@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import android.webkit.CookieManager
 import androidx.annotation.CheckResult
+import java.io.File
 import com.junkfood.seal.App
 import com.junkfood.seal.App.Companion.audioDownloadDir
 import com.junkfood.seal.App.Companion.context
@@ -120,13 +121,24 @@ object DownloadUtil {
                     }
                 }
             }
-            execute(request, playlistURL).out.run {
+            execute(request.withCache(), playlistURL).out.run {
                 val playlistInfo = jsonFormat.decodeFromString<PlaylistResult>(this)
                 if (playlistInfo.type != "playlist") {
                     jsonFormat.decodeFromString<VideoInfo>(this)
                 } else playlistInfo
             }
         }
+
+    /**
+     * youtubedl-android adds `--no-cache-dir` unless a request names a cache dir. Without the cache
+     * yt-dlp re-downloads YouTube's player JS and re-solves its signature/nsig challenges (in
+     * QuickJS) on every run, which dominates info-fetch time. A user's own `--cache-dir` (custom
+     * command templates) wins.
+     */
+    private fun YoutubeDLRequest.withCache(): YoutubeDLRequest = apply {
+        if (!hasOption("--cache-dir"))
+            addOption("--cache-dir", File(context.cacheDir, "yt-dlp").absolutePath)
+    }
 
     @CheckResult
     private fun getVideoInfo(
@@ -135,8 +147,11 @@ object DownloadUtil {
     ): Result<VideoInfo> =
         request.runCatching {
             val response: YoutubeDLResponse =
-                YoutubeDL.getInstance().execute(request, taskKey, null)
-            jsonFormat.decodeFromString(response.out)
+                YoutubeDL.getInstance().execute(request.withCache(), taskKey, null)
+            jsonFormat.decodeFromString<VideoInfo>(response.out).also {
+                // Keep the raw probe so the download can skip a second extraction
+                InfoJsonCache.put(it, response.out)
+            }
         }
 
     @CheckResult
@@ -744,6 +759,10 @@ object DownloadUtil {
             )
         }
 
+    /**
+     * Downloads with the probed info JSON when one is cached (no second extraction); if that run
+     * fails, e.g. because format URLs expired, drops the cache entry and retries from the URL.
+     */
     @CheckResult
     fun downloadVideo(
         videoInfo: VideoInfo? = null,
@@ -752,6 +771,33 @@ object DownloadUtil {
         taskId: String,
         downloadPreferences: DownloadPreferences,
         progressCallback: ((Float, Long, String) -> Unit)?,
+    ): Result<List<String>> {
+        val infoJson = videoInfo?.let { InfoJsonCache.fileFor(context, it) }
+        if (infoJson != null) {
+            val result =
+                downloadVideoImpl(
+                    videoInfo, playlistUrl, playlistItem, taskId, downloadPreferences,
+                    progressCallback, infoJson,
+                )
+            infoJson.delete()
+            if (result.isSuccess || result.exceptionOrNull() is YoutubeDL.CanceledException)
+                return result
+            InfoJsonCache.remove(videoInfo)
+        }
+        return downloadVideoImpl(
+            videoInfo, playlistUrl, playlistItem, taskId, downloadPreferences, progressCallback,
+            null,
+        )
+    }
+
+    private fun downloadVideoImpl(
+        videoInfo: VideoInfo?,
+        playlistUrl: String,
+        playlistItem: Int,
+        taskId: String,
+        downloadPreferences: DownloadPreferences,
+        progressCallback: ((Float, Long, String) -> Unit)?,
+        infoJson: File?,
     ): Result<List<String>> {
         if (videoInfo == null)
             return Result.failure(Throwable(context.getString(R.string.fetch_info_error_msg)))
@@ -765,7 +811,12 @@ object DownloadUtil {
                             Throwable(context.getString(R.string.fetch_info_error_msg))
                         )
                 }
-            val request = YoutubeDLRequest(url)
+            val request =
+                if (infoJson != null)
+                    YoutubeDLRequest(emptyList<String>()).apply {
+                        addOption("--load-info-json", infoJson.absolutePath)
+                    }
+                else YoutubeDLRequest(url)
             val pathBuilder = StringBuilder()
             val outputBuilder = StringBuilder()
 
@@ -887,7 +938,11 @@ object DownloadUtil {
                 }
                 .runCatching {
                     YoutubeDL.getInstance()
-                        .execute(request = this, processId = taskId, callback = progressCallback)
+                        .execute(
+                            request = this.withCache(),
+                            processId = taskId,
+                            callback = progressCallback,
+                        )
                 }
                 .onFailure { th ->
                     return if (
@@ -1000,7 +1055,11 @@ object DownloadUtil {
 
         return runCatching {
             YoutubeDL.getInstance()
-                .execute(request = request, processId = taskId, callback = progressCallback)
+                .execute(
+                    request = request.withCache(),
+                    processId = taskId,
+                    callback = progressCallback,
+                )
         }
     }
 
@@ -1042,7 +1101,10 @@ object DownloadUtil {
             withContext(Dispatchers.Main) { onTaskStarted(template, url) }
             runCatching {
                     val response =
-                        YoutubeDL.getInstance().execute(request = request, processId = taskId) {
+                        YoutubeDL.getInstance().execute(
+                            request = request.withCache(),
+                            processId = taskId,
+                        ) {
                             progress,
                             _,
                             text ->
