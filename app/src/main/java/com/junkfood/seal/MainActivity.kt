@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,7 +22,7 @@ import com.junkfood.seal.util.PreferenceUtil
 import com.junkfood.seal.util.PreferenceUtil.getBoolean
 import com.junkfood.seal.util.PreferenceUtil.updateBoolean
 import com.junkfood.seal.util.NOTIFICATION_PERMISSION_REQUESTED
-import com.junkfood.seal.util.matchUrlFromSharedText
+import com.junkfood.seal.util.matchUrlsFromSharedText
 import com.junkfood.seal.util.setLanguage
 import kotlinx.coroutines.runBlocking
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -63,26 +64,30 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val url = intent.getSharedURL()
-        if (url != null) {
-            dialogViewModel.postAction(DownloadDialogViewModel.Action.ShowSheet(listOf(url)))
+        val urls = intent.getSharedURLs()
+        if (urls.isNullOrEmpty()){
+            Log.e(TAG, getString(R.string.share_fail_msg))
+            return
         }
+        dialogViewModel.postAction(DownloadDialogViewModel.Action.ShowSheet(urls))
     }
 
-    private fun Intent.getSharedURL(): String? {
+    private fun Intent.getSharedURLs(): List<String>? {
         val intent = this
 
         return when (intent.action) {
             Intent.ACTION_VIEW -> {
-                intent.dataString
+                intent.dataString?.let {
+                    return listOf(it)
+                }
             }
 
             Intent.ACTION_SEND -> {
                 intent.getStringExtra(Intent.EXTRA_TEXT)?.let { sharedContent ->
                     intent.removeExtra(Intent.EXTRA_TEXT)
-                    matchUrlFromSharedText(sharedContent).also { matchedUrl ->
-                        if (sharedUrlCached != matchedUrl) {
-                            sharedUrlCached = matchedUrl
+                    matchUrlsFromSharedText(sharedContent).also { matchedUrls ->
+                        if (sharedUrlCached != matchedUrls) {
+                            sharedUrlCached = matchedUrls
                         }
                     }
                 }
@@ -104,6 +109,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        private var sharedUrlCached = ""
+        private var sharedUrlCached : List<String>? = null
     }
 }
