@@ -63,7 +63,10 @@ object DownloadUtil {
 
     const val EXTENSION = ".%(ext)s"
 
-    private const val ID = "[%(id)s]"
+    // Bounded like the title above: extractors without a real id fall back to the URL basename
+    // and its query string, which overflows the 255-byte limit on a path component.
+    // https://github.com/JunkFood02/Seal/issues/1886
+    private const val ID = "[%(id).32B]"
 
     private const val CLIP_TIMESTAMP = "%(section_start)d-%(section_end)d"
 
@@ -239,6 +242,7 @@ object DownloadUtil {
         val forceIpv4: Boolean,
         val mergeAudioStream: Boolean,
         val mergeToMkv: Boolean,
+        val preferOriginalAudio: Boolean = false,
     ) {
         companion object {
             val EMPTY =
@@ -294,6 +298,7 @@ object DownloadUtil {
                     mergeAudioStream = false,
                     mergeToMkv = false,
                     useCustomAudioPreset = false,
+                    preferOriginalAudio = false,
                 )
 
             fun createFromPreferences(): DownloadPreferences {
@@ -353,6 +358,7 @@ object DownloadUtil {
                     mergeAudioStream = false,
                     mergeToMkv =
                         (downloadSubtitle && embedSubtitle) || MERGE_OUTPUT_MKV.getBoolean(),
+                    preferOriginalAudio = PREFER_ORIGINAL_AUDIO.getBoolean(),
                 )
             }
         }
@@ -372,11 +378,23 @@ object DownloadUtil {
         this.addOption("--download-archive", context.getArchiveFile().absolutePath)
 
     @CheckResult
-    fun getCookieListFromDatabase(): Result<List<Cookie>> = runCatching {
-        CookieManager.getInstance().run {
-            if (!hasCookies()) throw Exception("There is no cookies in the database!")
-            flush()
-        }
+    suspend fun getCookieListFromDatabase(): Result<List<Cookie>> = runCatching {
+        val profiles = DatabaseUtil.getCookieProfileList()
+        if (profiles.isEmpty()) throw Exception("There is no cookies in the database!")
+        profiles.flatMap { parseNetscapeCookies(it.content) }
+            .ifEmpty { throw Exception("There is no cookies in the database!") }
+    }
+
+    suspend fun getCookiesContentFromDatabase(): Result<String> = runCatching {
+        val profiles = DatabaseUtil.getCookieProfileList()
+        if (profiles.isEmpty()) throw Exception("There is no cookies in the database!")
+        profiles.joinToString(separator = "") { it.content }
+            .ifEmpty { throw Exception("There is no cookies in the database!") }
+    }
+
+    @CheckResult
+    fun extractCookiesFromWebView(): Result<String> = runCatching {
+        CookieManager.getInstance().flush()
         SQLiteDatabase.openDatabase(
                 context.dataDir.resolve("app_webview/Default/Cookies").absolutePath,
                 null,
@@ -417,9 +435,35 @@ object DownloadUtil {
                     close()
                 }
                 close()
-                cookieList
+                if (cookieList.isEmpty()) throw Exception("No cookies found in WebView")
+                cookieList.toCookiesFileContent()
             }
     }
+
+    suspend fun syncCookiesToWebView() {
+        withContext(Dispatchers.IO) {
+            DatabaseUtil.getCookieProfileList().forEach { profile ->
+                parseNetscapeCookies(profile.content).forEach { cookie ->
+                    val domain = cookie.domain.removePrefix(".")
+                    val url = "https://$domain${cookie.path}"
+                    CookieManager.getInstance().setCookie(url, cookie.toSetCookieHeader())
+                }
+            }
+            CookieManager.getInstance().flush()
+        }
+    }
+
+    private fun Cookie.toSetCookieHeader(): String {
+        val expiresPart =
+            if (expiry > 0) "; Expires=${formatHttpDate(expiry)}" else ""
+        val securePart = if (secure) "; Secure" else ""
+        return "$name=$value; Domain=$domain; Path=$path$expiresPart$securePart"
+    }
+
+    private fun formatHttpDate(unixSeconds: Long): String =
+        java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", java.util.Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("GMT")
+        }.format(java.util.Date(unixSeconds * 1000L))
 
     fun List<Cookie>.toCookiesFileContent(): String =
         this.fold(StringBuilder(COOKIE_HEADER)) { acc, cookie ->
@@ -427,8 +471,32 @@ object DownloadUtil {
             }
             .toString()
 
-    fun getCookiesContentFromDatabase(): Result<String> =
-        getCookieListFromDatabase().mapCatching { it.toCookiesFileContent() }
+    fun parseNetscapeCookies(content: String): List<Cookie> {
+        val cookies = mutableListOf<Cookie>()
+        content.lines().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.isEmpty()) return@forEach
+            val processed =
+                if (trimmed.startsWith("#HttpOnly_")) trimmed.removePrefix("#HttpOnly_")
+                else if (trimmed.startsWith("#")) return@forEach
+                else trimmed
+            val fields = processed.split("\t")
+            if (fields.size >= 7) {
+                cookies.add(
+                    Cookie(
+                        domain = fields[0],
+                        includeSubdomains = fields[1].uppercase() == "TRUE",
+                        path = fields[2],
+                        secure = fields[3].uppercase() == "TRUE",
+                        expiry = fields[4].toLongOrNull() ?: 0L,
+                        name = fields[5],
+                        value = fields[6],
+                    )
+                )
+            }
+        }
+        return cookies
+    }
 
     private fun YoutubeDLRequest.enableAria2c(): YoutubeDLRequest =
         this.addOption("--downloader", "libaria2c.so")
@@ -544,8 +612,27 @@ object DownloadUtil {
         sorter: String,
     ) =
         preferences.run {
-            if (formatSorting && sortingFields.isNotEmpty()) addOption("-S", sortingFields)
-            else if (sorter.isNotEmpty()) addOption("-S", sorter) else {}
+            if (formatSorting && sortingFields.isNotEmpty()) {
+                val finalSorter =
+                    if (preferOriginalAudio && !sortingFields.contains("lang")) {
+                        connectWithDelimiter("lang", sortingFields, delimiter = ",")
+                    } else {
+                        sortingFields
+                    }
+                addOption("-S", finalSorter)
+            } else {
+                val finalSorter =
+                    if (preferOriginalAudio) {
+                        if (sorter.isNotEmpty()) {
+                            connectWithDelimiter("lang", sorter, delimiter = ",")
+                        } else {
+                            "lang"
+                        }
+                    } else {
+                        sorter
+                    }
+                if (finalSorter.isNotEmpty()) addOption("-S", finalSorter)
+            }
         }
 
     @CheckResult
@@ -832,11 +919,13 @@ object DownloadUtil {
     ): Result<List<String>> =
         preferences.run {
             val fileName =
-                preferences.newTitle.ifEmpty {
-                    videoInfo.filename
-                        ?: videoInfo.requestedDownloads?.firstOrNull()?.filename
-                        ?: videoInfo.title
-                }
+                FileUtil.sanitizeFileName(
+                    preferences.newTitle.ifEmpty {
+                        videoInfo.filename
+                            ?: videoInfo.requestedDownloads?.firstOrNull()?.filename
+                            ?: videoInfo.title
+                    }
+                )
 
             Log.d(TAG, "onFinishDownloading: $fileName")
             if (sdcard) {

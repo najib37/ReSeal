@@ -62,6 +62,7 @@ const val SUBDIRECTORY_PLAYLIST_TITLE = "subdirectory_playlist_title"
 const val PLAYLIST = "playlist"
 private const val LANGUAGE = "language"
 const val NOTIFICATION = "notification"
+const val NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
 private const val THEME_COLOR = "theme_color"
 const val PALETTE_STYLE = "palette_style"
 const val SUBTITLE = "subtitle"
@@ -73,7 +74,6 @@ const val CONVERT_SUBTITLE = "convert_subtitle"
 const val AUTO_TRANSLATED_SUBTITLES = "translated_subs"
 
 const val TEMPLATE_ID = "template_id"
-const val MAX_FILE_SIZE = "max_file_size"
 const val SPONSORBLOCK = "sponsorblock"
 const val SPONSORBLOCK_CATEGORIES = "sponsorblock_categories"
 const val ARIA2C = "aria2c"
@@ -108,6 +108,7 @@ const val MERGE_OUTPUT_MKV = "merge_to_mkv"
 const val USE_CUSTOM_AUDIO_PRESET = "custom_audio_preset"
 
 const val MERGE_MULTI_AUDIO_STREAM = "multi_audio_stream"
+const val PREFER_ORIGINAL_AUDIO = "prefer_original_audio"
 
 const val DOWNLOAD_TYPE_INITIALIZATION = "download_type_init"
 private const val DOWNLOAD_TYPE = "download_type"
@@ -170,17 +171,9 @@ const val LOW = 3
 const val ULTRA_LOW = 4
 
 const val RES_HIGHEST = 0
-const val RES_2160P = 1
-const val RES_1440P = 2
-const val RES_1080P = 3
-const val RES_720P = 4
-const val RES_480P = 5
-const val RES_360P = 6
 const val RES_LOWEST = 7
 
 const val TEMPLATE_EXAMPLE = """--no-mtime -S "ext""""
-
-const val TEMPLATE_SHORTCUTS = "template_shortcuts"
 
 const val TASK_LIST = "task_list"
 const val SAVED_LINKS = "saved_links"
@@ -195,9 +188,6 @@ val paletteStyles =
     )
 
 const val STYLE_TONAL_SPOT = 0
-const val STYLE_SPRITZ = 1
-const val STYLE_FRUIT_SALAD = 2
-const val STYLE_VIBRANT = 3
 const val STYLE_MONOCHROME = 4
 
 private val StringPreferenceDefaults =
@@ -216,8 +206,10 @@ private val BooleanPreferenceDefaults =
         CELLULAR_DOWNLOAD to false,
         YT_DLP_AUTO_UPDATE to true,
         NOTIFICATION to true,
+        NOTIFICATION_PERMISSION_REQUESTED to false,
         EMBED_METADATA to true,
         USE_CUSTOM_AUDIO_PRESET to false,
+        PREFER_ORIGINAL_AUDIO to false,
     )
 
 private val IntPreferenceDefaults =

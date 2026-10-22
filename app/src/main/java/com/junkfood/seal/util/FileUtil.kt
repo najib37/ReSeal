@@ -82,6 +82,19 @@ object FileUtil {
             clipData = ClipData(null, arrayOf(mimeType), ClipData.Item(data))
         }
 
+    fun createIntentForSharingFile(file: File, mimeType: String): Intent? {
+        val uri = FileProvider.getUriForFile(
+            context,
+            context.getFileProvider(),
+            file
+        )
+        return Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
     fun Context.getFileProvider() = "$packageName.provider"
 
     fun String.getFileSize(): Long =
@@ -97,6 +110,16 @@ object FileUtil {
                 DocumentFile.fromSingleUri(context, Uri.parse(this))?.name ?: "video"
             }
         }
+
+    // Characters that FAT32/exFAT (common on SD cards and some MTP targets) reject.
+    // Keeping spaces and non-ASCII letters intact so titles stay readable.
+    private val ILLEGAL_FILENAME_CHARS = Regex("""[\\/:*?"<>|]""")
+
+    fun sanitizeFileName(name: String): String {
+        val sanitized = ILLEGAL_FILENAME_CHARS.replace(name, "_")
+        // Trim trailing dots/spaces which Windows rejects and some Android OEMs mishandle.
+        return sanitized.trimEnd('.', ' ').ifEmpty { "download" }
+    }
 
     fun deleteFile(path: String) =
         path.runCatching {

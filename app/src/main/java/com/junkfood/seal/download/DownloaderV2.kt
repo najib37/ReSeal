@@ -2,6 +2,7 @@ package com.junkfood.seal.download
 
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshotFlow
@@ -19,10 +20,12 @@ import com.junkfood.seal.download.Task.DownloadState.Running
 import com.junkfood.seal.download.Task.RestartableAction.Download
 import com.junkfood.seal.download.Task.RestartableAction.FetchInfo
 import com.junkfood.seal.download.Task.TypeInfo
+import androidx.core.app.NotificationCompat
 import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.FileUtil
 import com.junkfood.seal.util.NotificationUtil
 import com.junkfood.seal.util.PreferenceUtil
+import com.junkfood.seal.util.ToastUtil
 import com.junkfood.seal.util.VideoInfo
 import com.yausername.youtubedl_android.YoutubeDL
 import kotlin.collections.component1
@@ -158,6 +161,28 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
     }
 
     override fun enqueue(task: Task) {
+        if (!PreferenceUtil.isNetworkAvailableForDownload()) {
+            taskStateMap +=
+                task to
+                    Task.State(
+                        downloadState =
+                            DownloadState.Error(
+                                throwable =
+                                    IllegalStateException(
+                                        appContext.getString(
+                                            R.string.download_disabled_with_cellular
+                                        )
+                                    ),
+                                action = Task.RestartableAction.FetchInfo,
+                            ),
+                        videoInfo = null,
+                        viewState = Task.ViewState(url = task.url, title = task.url),
+                    )
+            ToastUtil.makeToastSuspend(
+                appContext.getString(R.string.download_disabled_with_cellular)
+            )
+            return
+        }
         taskStateMap +=
             task to Task.State(Idle, null, Task.ViewState(url = task.url, title = task.url))
     }
@@ -182,6 +207,12 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
     override fun cancel(task: Task): Boolean = task.cancelImpl()
 
     override fun restart(task: Task) {
+        if (!PreferenceUtil.isNetworkAvailableForDownload()) {
+            ToastUtil.makeToastSuspend(
+                appContext.getString(R.string.download_disabled_with_cellular)
+            )
+            return
+        }
         task.restartImpl()
     }
 
@@ -218,6 +249,29 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
     /** Processes pending tasks, prioritizing downloads. */
     private fun doYourWork() {
         if (taskStateMap.countRunning() >= MAX_CONCURRENCY) return
+
+        if (!PreferenceUtil.isNetworkAvailableForDownload()) {
+            taskStateMap.entries
+                .filter { (_, state) ->
+                    state.downloadState == ReadyWithInfo || state.downloadState == Idle
+                }
+                .forEach { (task, state) ->
+                    val action =
+                        if (state.downloadState == ReadyWithInfo) Task.RestartableAction.Download
+                        else Task.RestartableAction.FetchInfo
+                    task.downloadState =
+                        DownloadState.Error(
+                            throwable =
+                                IllegalStateException(
+                                    appContext.getString(
+                                        R.string.download_disabled_with_cellular
+                                    )
+                                ),
+                            action = action,
+                        )
+                }
+            return
+        }
 
         taskStateMap.entries
             .sortedBy { (_, state) -> state.downloadState }
@@ -316,22 +370,51 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                                 if (pathList.isEmpty()) R.string.status_completed
                                 else R.string.download_finish_notification
                             )
-                        FileUtil.createIntentForOpeningFile(pathList.firstOrNull()).run {
-                            NotificationUtil.finishNotification(
-                                notificationId,
-                                title = viewState.title,
-                                text = text,
-                                intent =
-                                    if (this != null)
+                        val openIntent =
+                            FileUtil.createIntentForOpeningFile(pathList.firstOrNull())?.let {
+                                PendingIntent.getActivity(
+                                    appContext,
+                                    notificationId,
+                                    it,
+                                    PendingIntent.FLAG_IMMUTABLE,
+                                )
+                            }
+
+                        val shareAction =
+                            pathList
+                                .firstOrNull()
+                                ?.takeIf { pathList.size == 1 }
+                                ?.let { filePath ->
+                                    FileUtil.createIntentForSharingFile(filePath)?.let {
+                                        val chooser =
+                                            Intent.createChooser(
+                                                it,
+                                                appContext.getString(R.string.share),
+                                            )
                                         PendingIntent.getActivity(
                                             appContext,
-                                            0,
-                                            this,
-                                            PendingIntent.FLAG_IMMUTABLE,
+                                            notificationId + 1,
+                                            chooser,
+                                            PendingIntent.FLAG_IMMUTABLE or
+                                                PendingIntent.FLAG_UPDATE_CURRENT,
                                         )
-                                    else null,
-                            )
-                        }
+                                    }
+                                }
+                                ?.let {
+                                    NotificationCompat.Action(
+                                        android.R.drawable.ic_menu_share,
+                                        appContext.getString(R.string.share),
+                                        it,
+                                    )
+                                }
+
+                        NotificationUtil.finishNotification(
+                            notificationId,
+                            title = viewState.title,
+                            text = text,
+                            intent = openIntent,
+                            actions = listOfNotNull(shareAction),
+                        )
                     }
                     .onFailure { throwable ->
                         if (throwable is YoutubeDL.CanceledException) {

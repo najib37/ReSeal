@@ -1,7 +1,10 @@
 package com.junkfood.seal
 
 import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.annotation.CheckResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
@@ -34,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 
 /** Singleton Downloader for state holder & perform downloads, used by `Activity` & `Service` */
 object Downloader {
@@ -111,6 +115,13 @@ object Downloader {
 
         fun onCopyLog(clipboardManager: ClipboardManager) {
             clipboardManager.setText(AnnotatedString(output))
+        }
+
+        fun onShareLogAsFile(activityContext: Context) {
+            val tempFile = File.createTempFile("seal_log_", ".txt", activityContext.cacheDir)
+            tempFile.writeText(output)
+            val shareIntent = FileUtil.createIntentForSharingFile(tempFile, "text/plain")
+            activityContext.startActivity(Intent.createChooser(shareIntent, "Share log as file via"))
         }
 
         fun onRestart() {
@@ -412,22 +423,50 @@ object Downloader {
                         if (it.isEmpty()) R.string.status_completed
                         else R.string.download_finish_notification
                     )
-                FileUtil.createIntentForOpeningFile(it.firstOrNull()).run {
-                    NotificationUtil.finishNotification(
-                        notificationId,
-                        title = videoInfo.title,
-                        text = text,
-                        intent =
-                            if (this != null)
+                val openIntent =
+                    FileUtil.createIntentForOpeningFile(it.firstOrNull())?.let { intent ->
+                        PendingIntent.getActivity(
+                            context,
+                            notificationId,
+                            intent,
+                            PendingIntent.FLAG_IMMUTABLE,
+                        )
+                    }
+
+                val shareAction =
+                    it.firstOrNull()
+                        ?.takeIf { _ -> it.size == 1 }
+                        ?.let { filePath ->
+                            FileUtil.createIntentForSharingFile(filePath)?.let { shareIntent ->
+                                val chooser =
+                                    Intent.createChooser(
+                                        shareIntent,
+                                        context.getString(R.string.share),
+                                    )
                                 PendingIntent.getActivity(
                                     context,
-                                    0,
-                                    this,
-                                    PendingIntent.FLAG_IMMUTABLE,
+                                    notificationId + 1,
+                                    chooser,
+                                    PendingIntent.FLAG_IMMUTABLE or
+                                        PendingIntent.FLAG_UPDATE_CURRENT,
                                 )
-                            else null,
-                    )
-                }
+                            }
+                        }
+                        ?.let { pendingIntent ->
+                            NotificationCompat.Action(
+                                android.R.drawable.ic_menu_share,
+                                context.getString(R.string.share),
+                                pendingIntent,
+                            )
+                        }
+
+                NotificationUtil.finishNotification(
+                    notificationId,
+                    title = videoInfo.title,
+                    text = text,
+                    intent = openIntent,
+                    actions = listOfNotNull(shareAction),
+                )
             }
     }
 
