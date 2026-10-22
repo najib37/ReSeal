@@ -37,7 +37,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material3.Button
+import androidx.compose.material3.Switch
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import com.junkfood.seal.App
+import com.junkfood.seal.util.CELLULAR_DOWNLOAD
+import com.junkfood.seal.util.PreferenceUtil.getBoolean
+import com.junkfood.seal.util.PreferenceUtil.updateBoolean
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import com.junkfood.seal.ui.common.LocalFixedColorRoles
@@ -220,6 +230,43 @@ private fun InputUrlPageImpl(
                         },
                     )
                 }
+            }
+        }
+
+        // On mobile data with cellular downloads off, queued tasks would just fail; offer the
+        // setting right here instead of only in Settings > Network
+        var allowCellular by remember { mutableStateOf(CELLULAR_DOWNLOAD.getBoolean()) }
+        val isMetered = remember { App.connectivityManager.isActiveNetworkMetered }
+        if (isMetered) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 16.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .toggleable(
+                            value = allowCellular,
+                            role = Role.Switch,
+                            onValueChange = {
+                                allowCellular = it
+                                CELLULAR_DOWNLOAD.updateBoolean(it)
+                            },
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Outlined.SignalCellularAlt,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 16.dp),
+                )
+                Text(
+                    text = stringResource(R.string.download_with_cellular),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(checked = allowCellular, onCheckedChange = null)
             }
         }
 

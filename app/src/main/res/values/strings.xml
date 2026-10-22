@@ -253,6 +253,13 @@
     <string name="clear">Clear</string>
     <string name="clear_completed_tasks">Clear completed</string>
     <string name="clear_failed_tasks">Clear failed and canceled</string>
+    <string name="fast_download">Fast download</string>
+    <string name="fast_download_desc">Pick a quality and start right away</string>
+    <string name="fast_download_video_detail">Up to this resolution · MP4</string>
+    <string name="fast_download_note">Downloads the best quality up to your choice. If it isn\'t available, a lower resolution is used.</string>
+    <string name="low_quality">Low</string>
+    <string name="medium_quality">Medium</string>
+    <string name="high_quality">High</string>
     <string name="simple">Simple</string>
     <string name="advanced">Advanced</string>
     <string name="no_running_tasks">No running tasks</string>
