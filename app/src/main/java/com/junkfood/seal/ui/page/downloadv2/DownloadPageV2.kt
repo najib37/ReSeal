@@ -39,8 +39,13 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MediumExtendedFloatingActionButton
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -78,14 +83,14 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.junkfood.seal.R
@@ -100,12 +105,8 @@ import com.junkfood.seal.download.Task.DownloadState.ReadyWithInfo
 import com.junkfood.seal.download.Task.DownloadState.Running
 import com.junkfood.seal.ui.common.HapticFeedback.slightHapticFeedback
 import com.junkfood.seal.ui.common.LocalDarkTheme
-import com.junkfood.seal.ui.common.LocalFixedColorRoles
 import com.junkfood.seal.ui.common.LocalWindowWidthState
 import com.junkfood.seal.ui.component.SealModalBottomSheet
-import com.junkfood.seal.ui.component.SelectionGroupDefaults
-import com.junkfood.seal.ui.component.SelectionGroupItem
-import com.junkfood.seal.ui.component.SelectionGroupRow
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.Action
 import com.junkfood.seal.ui.page.downloadv2.configure.Config
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialog
@@ -344,7 +345,7 @@ fun DownloadPageImplV2(
 
     LaunchedEffect(selectedTask, taskDownloadStateMap.size) {
         if (!taskDownloadStateMap.contains(selectedTask)) {
-            selectedTask == null
+            selectedTask = null
         }
     }
 
@@ -384,22 +385,29 @@ fun DownloadPageImplV2(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Spacer(Modifier.height(with(LocalDensity.current) { headerOffset.toDp() }))
                     Header(onMenuOpen = onMenuOpen, modifier = Modifier.padding(horizontal = 16.dp))
-                    SelectionGroupRow(
+                    // Connected button group (M3 Expressive): the checked item morphs to a pill
+                    Row(
                         modifier =
                             Modifier.horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 20.dp)
+                                .padding(horizontal = 16.dp),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
                     ) {
-                        Filter.entries.forEach { filter ->
-                            SelectionGroupItem(
-                                colors =
-                                    SelectionGroupDefaults.colors(
-                                        activeContainerColor =
-                                            LocalFixedColorRoles.current.tertiaryFixed,
-                                        activeContentColor =
-                                            LocalFixedColorRoles.current.onTertiaryFixed,
-                                    ),
-                                selected = activeFilter == filter,
-                                onClick = {
+                        val filters = Filter.entries
+                        filters.forEachIndexed { index, filter ->
+                            val count =
+                                taskDownloadStateMap.count { filter.predict(it.toPair()) }
+                            ToggleButton(
+                                checked = activeFilter == filter,
+                                shapes =
+                                    when (index) {
+                                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                        filters.lastIndex ->
+                                            ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                    },
+                                modifier = Modifier.semantics { role = Role.RadioButton },
+                                onCheckedChange = {
                                     if (activeFilter == filter) {
                                         scope.launch { lazyListState.animateScrollToItem(0) }
                                         scope.launch {
@@ -416,6 +424,13 @@ fun DownloadPageImplV2(
                                 },
                             ) {
                                 Text(filter.label())
+                                if (count > 0 && filter != Filter.All) {
+                                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                    Text(
+                                        text = count.toString(),
+                                        style = MaterialTheme.typography.labelLargeEmphasized,
+                                    )
+                                }
                             }
                         }
                     }
@@ -428,6 +443,7 @@ fun DownloadPageImplV2(
                 LazyVerticalGrid(
                     modifier = Modifier,
                     state = lazyListState,
+                    verticalArrangement = Arrangement.Top,
                     columns = GridCells.Adaptive(240.dp),
                     contentPadding =
                         windowInsetsPadding +
@@ -446,7 +462,18 @@ fun DownloadPageImplV2(
                                 audioCount = filteredMap.size - videoCount,
                                 isGridView = isGridView,
                                 onToggleView = { isGridView = !isGridView },
-                                onShowMenu = { context.makeToast("Not implemented yet!") },
+                                onClearCompleted = {
+                                    taskDownloadStateMap
+                                        .filter { Filter.Finished.predict(it.toPair()) }
+                                        .keys
+                                        .forEach { onActionPost(it, UiAction.Delete) }
+                                },
+                                onClearFailed = {
+                                    taskDownloadStateMap
+                                        .filter { Filter.Canceled.predict(it.toPair()) }
+                                        .keys
+                                        .forEach { onActionPost(it, UiAction.Delete) }
+                                },
                             )
                         }
                     }
@@ -561,11 +588,7 @@ private fun HeaderCompact(modifier: Modifier = Modifier, onMenuOpen: () -> Unit)
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             stringResource(R.string.download_queue),
-            style =
-                MaterialTheme.typography.titleLarge.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                ),
+            style = MaterialTheme.typography.titleLargeEmphasized,
         )
     }
 }
@@ -576,38 +599,31 @@ private fun HeaderExpanded(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             stringResource(R.string.download_queue),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
+            style = MaterialTheme.typography.headlineSmallEmphasized,
         )
     }
     Spacer(Modifier.height(4.dp))
 }
 
 @Composable
-fun FABs(modifier: Modifier = Modifier, downloadCallback: () -> Unit = {}) {
-    val expanded = LocalWindowWidthState.current != WindowWidthSizeClass.Compact
-    Column(modifier = modifier.padding(6.dp), horizontalAlignment = Alignment.End) {
-        FloatingActionButton(
-            onClick = downloadCallback,
-            content = {
-                if (expanded) {
-                    Row(
-                        modifier = Modifier.widthIn(min = 80.dp).padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Outlined.FileDownload, contentDescription = null)
-                        Spacer(Modifier.width(12.dp))
-                        Text(stringResource(R.string.download))
-                    }
-                } else {
-                    Icon(
-                        Icons.Outlined.FileDownload,
-                        contentDescription = stringResource(R.string.download),
-                    )
-                }
-            },
-            modifier = Modifier.padding(vertical = 12.dp),
-        )
-    }
+fun FABs(
+    modifier: Modifier = Modifier,
+    expanded: Boolean = true,
+    downloadCallback: () -> Unit = {},
+) {
+    // Expressive medium extended FAB: the label collapses away while the list scrolls
+    MediumExtendedFloatingActionButton(
+        onClick = downloadCallback,
+        expanded = expanded,
+        icon = {
+            Icon(
+                Icons.Outlined.FileDownload,
+                contentDescription = if (expanded) null else stringResource(R.string.download),
+            )
+        },
+        text = { Text(stringResource(R.string.download)) },
+        modifier = modifier.padding(vertical = 6.dp),
+    )
 }
 
 @Composable
@@ -668,8 +684,10 @@ fun SubHeader(
     audioCount: Int = 0,
     isGridView: Boolean = true,
     onToggleView: () -> Unit,
-    onShowMenu: () -> Unit,
+    onClearCompleted: () -> Unit,
+    onClearFailed: () -> Unit,
 ) {
+    var showMenu by remember { mutableStateOf(false) }
     val text = buildString {
         if (videoCount > 0) {
             append(pluralStringResource(R.plurals.video_count, videoCount).format(videoCount))
@@ -696,31 +714,52 @@ fun SubHeader(
 
         Spacer(modifier = Modifier.weight(1f))
 
+        // Small icon buttons keep a 48dp touch target; labels make them visible to TalkBack
         FilledIconButton(
             onClick = onToggleView,
-            modifier = Modifier.clearAndSetSemantics {}.size(32.dp),
+            shapes = IconButtonDefaults.shapes(),
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = containerColor),
         ) {
             Icon(
                 imageVector =
                     if (isGridView) Icons.AutoMirrored.Outlined.List else Icons.Outlined.GridView,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                contentDescription =
+                    stringResource(
+                        if (isGridView) R.string.switch_to_list_view
+                        else R.string.switch_to_grid_view
+                    ),
+                modifier = Modifier.size(18.dp),
             )
         }
 
-        Spacer(Modifier.width(4.dp))
-
-        FilledIconButton(
-            onClick = onShowMenu,
-            modifier = Modifier.clearAndSetSemantics {}.size(32.dp),
-            colors = IconButtonDefaults.filledIconButtonColors(containerColor = containerColor),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.MoreVert,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
+        Box {
+            FilledIconButton(
+                onClick = { showMenu = true },
+                shapes = IconButtonDefaults.shapes(),
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = containerColor),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.MoreVert,
+                    contentDescription = stringResource(R.string.show_more_actions),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.clear_completed_tasks)) },
+                    onClick = {
+                        showMenu = false
+                        onClearCompleted()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.clear_failed_tasks)) },
+                    onClick = {
+                        showMenu = false
+                        onClearFailed()
+                    },
+                )
+            }
         }
     }
 }

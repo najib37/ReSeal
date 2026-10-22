@@ -251,6 +251,10 @@
     <string name="copy_log">Copy log</string>
     <string name="share_log_as_file">Share as file</string>
     <string name="clear">Clear</string>
+    <string name="clear_completed_tasks">Clear completed</string>
+    <string name="clear_failed_tasks">Clear failed and canceled</string>
+    <string name="switch_to_list_view">Switch to list view</string>
+    <string name="switch_to_grid_view">Switch to grid view</string>
     <string name="edit_shortcuts">Edit shortcuts</string>
     <string name="add">Add</string>
     <string name="shortcuts">Shortcuts</string>

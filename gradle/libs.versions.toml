@@ -6,6 +6,7 @@ androidGradlePlugin = "8.13.2"
 # Newer core / Compose 1.12 / navigation 2.10 / okhttp 5.5 require AGP 9.1 and compileSdk 37
 androidxComposeBom = "2026.06.01"
 androidxCore = "1.18.0"
+material3 = "1.5.0-alpha18"
 androidMaterial = "1.14.0"
 androidxAppCompat = "1.8.0"
 documentfile = "1.1.0"
@@ -67,7 +68,9 @@ androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 
 androidx-compose-material = { group = "androidx.compose.material", name = "material" }
 
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+# M3 Expressive components only ship in material3 1.5; alpha18 is the last one that builds with
+# AGP 8 / compileSdk 36 (alpha19+ need AGP 9.1 and compileSdk 37)
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-material3-windowSizeClass = { group = "androidx.compose.material3", name = "material3-window-size-class" }
 
 androidx-graphics-shapes = { group = "androidx.graphics", name = "graphics-shapes", version.ref = "graphics" }

@@ -4,7 +4,9 @@ import android.os.Build
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -84,8 +86,9 @@ fun SealTheme(
         LocalFixedColorRoles provides FixedColorRoles.fromTonalPalettes(tonalPalettes),
         LocalTextStyle provides textStyle,
     ) {
-        MaterialTheme(
+        MaterialExpressiveTheme(
             colorScheme = colorScheme,
+            motionScheme = MotionScheme.expressive(),
             typography = Typography,
             shapes = Shapes,
             content = content,

@@ -38,6 +38,7 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
@@ -455,7 +456,7 @@ fun ListItemStateText(
                 is FetchingInfo,
                 Idle,
                 ReadyWithInfo -> {
-                    CircularProgressIndicator(modifier = sizeModifier, strokeWidth = 2.5.dp)
+                    LoadingIndicator(modifier = sizeModifier)
                 }
                 is Running -> {
                     val progress = downloadState.progress
@@ -642,10 +643,9 @@ private fun ProgressButton(modifier: Modifier = Modifier, progress: Float, onCli
                 .clickable(onClickLabel = stringResource(R.string.cancel), onClick = onClick)
     ) {
         if (progress < 0) {
-            CircularProgressIndicator(
+            LoadingIndicator(
                 modifier = Modifier.size(IconButtonSize).align(Alignment.Center),
                 color = ActionButtonContentColor,
-                trackColor = Color.Transparent,
             )
         } else {
             CircularProgressIndicator(
