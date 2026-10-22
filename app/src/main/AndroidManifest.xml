@@ -53,7 +53,8 @@
             android:exported="true"
             android:label="@string/title_activity_share"
             android:launchMode="singleInstance"
-            android:theme="@style/Theme.Seal.Dialog">
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
 
