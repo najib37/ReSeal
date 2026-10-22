@@ -35,7 +35,12 @@ android {
             create("githubPublish") {
                 keyAlias = keystoreProperties["keyAlias"].toString()
                 keyPassword = keystoreProperties["keyPassword"].toString()
-                storeFile = file(keystoreProperties["storeFile"]!!)
+                storeFile =
+                    file(
+                        requireNotNull(keystoreProperties["storeFile"]) {
+                            "keystore.properties is missing 'storeFile'"
+                        }
+                    )
                 storePassword = keystoreProperties["storePassword"].toString()
             }
         }

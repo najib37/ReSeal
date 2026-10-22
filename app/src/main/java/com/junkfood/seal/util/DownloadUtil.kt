@@ -474,8 +474,9 @@ object DownloadUtil {
     fun parseNetscapeCookies(content: String): List<Cookie> {
         val cookies = mutableListOf<Cookie>()
         content.lines().forEach { line ->
-            val trimmed = line.trim()
-            if (trimmed.isEmpty()) return@forEach
+            // Only strip line endings: a cookie with an empty value ends in a tab that must survive
+            val trimmed = line.trimEnd('\r', '\n').trimStart()
+            if (trimmed.isBlank()) return@forEach
             val processed =
                 if (trimmed.startsWith("#HttpOnly_")) trimmed.removePrefix("#HttpOnly_")
                 else if (trimmed.startsWith("#")) return@forEach
