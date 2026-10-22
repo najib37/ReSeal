@@ -22,6 +22,7 @@ import com.junkfood.seal.util.PreferenceUtil
 import com.junkfood.seal.util.PreferenceUtil.getBoolean
 import com.junkfood.seal.util.PreferenceUtil.updateBoolean
 import com.junkfood.seal.util.NOTIFICATION_PERMISSION_REQUESTED
+import com.junkfood.seal.util.getWebUrl
 import com.junkfood.seal.util.matchUrlsFromSharedText
 import com.junkfood.seal.util.setLanguage
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -76,7 +77,7 @@ class MainActivity : AppCompatActivity() {
 
         return when (intent.action) {
             Intent.ACTION_VIEW -> {
-                intent.dataString?.let {
+                intent.getWebUrl()?.let {
                     return listOf(it)
                 }
             }
