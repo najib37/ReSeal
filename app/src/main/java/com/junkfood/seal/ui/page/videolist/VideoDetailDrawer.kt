@@ -4,23 +4,22 @@ package com.junkfood.seal.ui.page.videolist
 
 import android.content.Intent
 import android.content.res.Configuration
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
@@ -28,10 +27,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -42,9 +40,8 @@ import androidx.compose.ui.unit.dp
 import com.junkfood.seal.R
 import com.junkfood.seal.database.objects.DownloadedVideoInfo
 import com.junkfood.seal.ui.common.HapticFeedback.slightHapticFeedback
-import com.junkfood.seal.ui.component.FilledTonalButtonWithIcon
-import com.junkfood.seal.ui.component.LongTapTextButton
-import com.junkfood.seal.ui.component.OutlinedButtonWithIcon
+import com.junkfood.seal.ui.common.LocalFixedColorRoles
+import com.junkfood.seal.ui.component.ActionSheetPrimaryButton
 import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.util.FileUtil
@@ -61,7 +58,6 @@ fun VideoDetailDrawer(
     val uriHandler = LocalUriHandler.current
     val view = LocalView.current
     val context = LocalContext.current
-    val hapticFeedback = LocalHapticFeedback.current
 
     val onReDownload =
         remember(info) {
@@ -93,9 +89,15 @@ fun VideoDetailDrawer(
                 onDelete()
             },
             onOpenLink = {
-                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                view.slightHapticFeedback()
                 onDismissRequest()
                 uriHandler.openUri(videoUrl)
+            },
+            onOpenFile = {
+                view.slightHapticFeedback()
+                FileUtil.openFile(path = videoPath) {
+                    ToastUtil.makeToast(context.getString(R.string.file_unavailable))
+                }
             },
             onShareFile = {
                 view.slightHapticFeedback()
@@ -118,6 +120,7 @@ private fun DrawerPreview() {
     }
 }
 
+/** Same layout as the download queue's action sheet: title block, then a row of icon buttons */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VideoDetailDrawerImpl(
@@ -130,83 +133,104 @@ fun VideoDetailDrawerImpl(
     onReDownload: (() -> Unit) = {},
     onDelete: () -> Unit = {},
     onOpenLink: () -> Unit = {},
+    onOpenFile: () -> Unit = {},
     onShareFile: () -> Unit = {},
 ) {
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+    val fixedColors = LocalFixedColorRoles.current
     SealModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = onDismissRequest,
-        contentPadding = PaddingValues(horizontal = 20.dp),
+        contentPadding = PaddingValues(),
         content = {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 SelectionContainer {
+                    Text(text = title, style = MaterialTheme.typography.titleSmall)
+                }
+                if (author != "playlist" && author != "null") {
+                    Spacer(Modifier.height(2.dp))
                     Text(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge,
+                        text = author,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (author != "playlist" && author != "null")
-                    SelectionContainer {
-                        Text(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                            text = author,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-            }
-            Row(modifier = Modifier.padding(vertical = 6.dp).fillMaxWidth()) {
-                LongTapTextButton(
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(url))
-                        ToastUtil.makeToast(context.getString(R.string.link_copied))
-                    },
-                    onClickLabel = stringResource(id = R.string.copy_link),
-                    onLongClick = onOpenLink,
-                    onLongClickLabel = stringResource(R.string.open_url),
-                ) {
-                    Icon(Icons.Outlined.Link, stringResource(R.string.video_url))
-                    Text(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                        text = url,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = url,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
 
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(top = 24.dp)
-                        .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.End,
+            LazyRow(
+                modifier = Modifier.padding(top = 12.dp, bottom = 24.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp),
             ) {
-                OutlinedButtonWithIcon(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    onClick = onDelete,
-                    icon = Icons.Outlined.Delete,
-                    text = stringResource(R.string.remove),
-                )
                 if (isFileAvailable) {
-                    FilledTonalButtonWithIcon(
-                        onClick = onShareFile,
-                        icon = Icons.Outlined.Share,
-                        text = stringResource(R.string.share),
-                    )
+                    item(key = "PlayButton") {
+                        ActionSheetPrimaryButton(
+                            containerColor = fixedColors.primaryFixed,
+                            contentColor = fixedColors.onPrimaryFixedVariant,
+                            imageVector = Icons.Rounded.PlayArrow,
+                            text = stringResource(R.string.open_file),
+                            onClick = onOpenFile,
+                        )
+                    }
+                    item(key = "ShareButton") {
+                        ActionSheetPrimaryButton(
+                            containerColor = fixedColors.secondaryFixed,
+                            contentColor = fixedColors.onSecondaryFixedVariant,
+                            imageVector = Icons.Rounded.Share,
+                            text = stringResource(R.string.share),
+                            onClick = onShareFile,
+                        )
+                    }
                 } else {
-                    FilledTonalButtonWithIcon(
-                        onClick = onReDownload,
-                        icon = Icons.Outlined.FileDownload,
-                        text = stringResource(R.string.redownload),
-                        colors =
-                            ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            ),
+                    item(key = "RedownloadButton") {
+                        ActionSheetPrimaryButton(
+                            containerColor = fixedColors.tertiaryFixed,
+                            contentColor = fixedColors.onTertiaryFixedVariant,
+                            imageVector = Icons.Outlined.FileDownload,
+                            text = stringResource(R.string.redownload),
+                            onClick = onReDownload,
+                        )
+                    }
+                }
+                item(key = "DeleteButton") {
+                    ActionSheetPrimaryButton(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        outlineColor = MaterialTheme.colorScheme.outlineVariant,
+                        imageVector = Icons.Outlined.Delete,
+                        text = stringResource(R.string.delete),
+                        onClick = onDelete,
+                    )
+                }
+                item(key = "CopyURLButton") {
+                    ActionSheetPrimaryButton(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        outlineColor = MaterialTheme.colorScheme.outlineVariant,
+                        imageVector = Icons.Outlined.ContentCopy,
+                        text = stringResource(R.string.copy_link),
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(url))
+                            ToastUtil.makeToast(context.getString(R.string.link_copied))
+                        },
+                    )
+                }
+                item(key = "OpenVideoURLButton") {
+                    ActionSheetPrimaryButton(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        outlineColor = MaterialTheme.colorScheme.outlineVariant,
+                        imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                        text = stringResource(R.string.open_url),
+                        onClick = onOpenLink,
                     )
                 }
             }

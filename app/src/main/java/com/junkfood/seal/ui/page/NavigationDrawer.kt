@@ -166,12 +166,11 @@ fun NavigationDrawerSheetContent(
     footer: @Composable (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
-    // Close first, then navigate. Unlike invokeOnCompletion, nothing navigates if the job is cancelled
+    // Navigate right away; the close animation runs in this sheet's scope, which can be cancelled
+    // as the drawer closes, so navigation must not wait on it
     val navigateTo: (String) -> Unit = { route ->
-        scope.launch {
-            onDismissRequest()
-            onNavigateToRoute(route)
-        }
+        onNavigateToRoute(route)
+        scope.launch { onDismissRequest() }
     }
     Column(
         modifier =

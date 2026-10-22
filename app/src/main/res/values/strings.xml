@@ -37,6 +37,8 @@
     <string name="open_url">Open link</string>
     <string name="remove">Remove</string>
     <string name="delete_file">Delete file</string>
+    <string name="remove_task_msg">Remove \"%1$s\" from the download queue?</string>
+    <string name="delete_temp_files">Delete temporary files</string>
     <string name="about">About</string>
     <string name="about_page">Version, feedback, auto update</string>
     <string name="back">Back</string>

@@ -16,6 +16,8 @@ android {
     defaultConfig {
         minSdk = 24
     }
+    testOptions { targetSdk = 35 }
+    lint { targetSdk = 35 }
     namespace = "com.junkfood.seal.color"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
