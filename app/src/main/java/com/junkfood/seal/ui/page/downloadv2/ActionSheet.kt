@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.automirrored.outlined.TextSnippet
 import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -145,18 +144,6 @@ private fun CancelButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
         contentColor = MaterialTheme.colorScheme.onSurface,
         imageVector = Icons.Outlined.Cancel,
         text = stringResource(R.string.cancel),
-        onClick = onClick,
-    )
-}
-
-@Composable
-private fun DownloadLogButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
-    ActionSheetPrimaryButton(
-        modifier = modifier,
-        containerColor = LocalFixedColorRoles.current.secondaryFixed,
-        contentColor = LocalFixedColorRoles.current.onSecondaryFixedVariant,
-        imageVector = Icons.AutoMirrored.Outlined.TextSnippet,
-        text = stringResource(R.string.show_logs),
         onClick = onClick,
     )
 }

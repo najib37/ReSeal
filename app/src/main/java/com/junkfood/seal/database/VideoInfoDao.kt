@@ -30,9 +30,6 @@ interface VideoInfoDao {
 
     @Query("DELETE FROM DownloadedVideoInfo WHERE id = :id") suspend fun deleteInfoById(id: Int)
 
-    @Query("DELETE FROM DownloadedVideoInfo WHERE videoPath = :path")
-    suspend fun deleteInfoByPath(path: String)
-
     @Query("select * from DownloadedVideoInfo where videoPath = :path")
     suspend fun getInfoByPath(path: String): DownloadedVideoInfo?
 
@@ -43,8 +40,6 @@ interface VideoInfoDao {
     ) {
         if (getInfoByPath(path) == null) insert(videoInfo)
     }
-
-    @Delete suspend fun deleteInfo(vararg info: DownloadedVideoInfo)
 
     @Delete @Transaction suspend fun deleteInfoList(idList: List<DownloadedVideoInfo>)
 
@@ -66,11 +61,6 @@ interface VideoInfoDao {
     @Insert @Transaction suspend fun importTemplates(templateList: List<CommandTemplate>)
 
     @Update suspend fun updateTemplate(template: CommandTemplate)
-
-    @Delete suspend fun deleteTemplate(template: CommandTemplate)
-
-    @Query("SELECT * FROM CommandTemplate where id = :id")
-    suspend fun getTemplateById(id: Int): CommandTemplate
 
     @Query("select * from CookieProfile where id=:id")
     suspend fun getCookieById(id: Int): CookieProfile?

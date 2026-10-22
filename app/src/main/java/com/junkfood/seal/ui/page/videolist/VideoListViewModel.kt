@@ -33,8 +33,9 @@ class VideoListViewModel : ViewModel() {
 
     private val _mediaInfoFlow = DatabaseUtil.getDownloadHistoryFlow()
 
-    val videoListFlow: Flow<List<DownloadedVideoInfo>> =
-        _mediaInfoFlow.map { it.reversed().sortedBy { info -> info.filterByType() } }
+    val videoListFlow: Flow<List<DownloadedVideoInfo>> = _mediaInfoFlow.map {
+        it.reversed().sortedBy { info -> info.filterByType() }
+    }
 
     val searchedVideoListFlow =
         videoListFlow.combine(stateFlow) { list, state ->
@@ -44,18 +45,17 @@ class VideoListViewModel : ViewModel() {
                     state.searchText.let { text ->
                         with(it) {
                             videoTitle.contains(text, ignoreCase = true) ||
-                                    videoAuthor.contains(text, ignoreCase = true) ||
-                                    extractor.contains(text, ignoreCase = true) ||
-                                    videoPath.contains(text, ignoreCase = true)
+                                videoAuthor.contains(text, ignoreCase = true) ||
+                                extractor.contains(text, ignoreCase = true) ||
+                                videoPath.contains(text, ignoreCase = true)
                         }
                     }
                 }
         }
 
-    val filterSetFlow =
-        searchedVideoListFlow.map { infoList ->
-            mutableSetOf<String>().apply { infoList.forEach { this.add(it.extractor) } }
-        }
+    val filterSetFlow = searchedVideoListFlow.map { infoList ->
+        mutableSetOf<String>().apply { infoList.forEach { this.add(it.extractor) } }
+    }
 
     val fileSizeMapFlow =
         videoListFlow.flowOn(Dispatchers.IO).map { list ->
@@ -135,14 +135,6 @@ class VideoListViewModel : ViewModel() {
                                 .format(importedCount)
                         )
             )
-        }
-    }
-
-    // ✨ NEW: Clear all downloads function
-    fun clearAllDownloads() {
-        viewModelScope.launch(Dispatchers.IO) {
-            // This will be called from VideoListPage with the full list
-            // The actual deletion is handled by deleteDownloadHistory function
         }
     }
 

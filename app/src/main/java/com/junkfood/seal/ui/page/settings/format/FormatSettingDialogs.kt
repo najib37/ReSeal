@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -26,11 +25,8 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SettingsSuggest
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.VideoFile
-import androidx.compose.material.icons.outlined.VideoSettings
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedAssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -59,7 +55,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.junkfood.seal.R
-import com.junkfood.seal.ui.common.booleanState
 import com.junkfood.seal.ui.common.intState
 import com.junkfood.seal.ui.common.motion.materialSharedAxisX
 import com.junkfood.seal.ui.common.stringState
@@ -75,7 +70,6 @@ import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.component.SealTextField
 import com.junkfood.seal.ui.page.downloadv2.configure.PreferencesMock
 import com.junkfood.seal.util.AUDIO_CONVERSION_FORMAT
-import com.junkfood.seal.util.AUDIO_CONVERT
 import com.junkfood.seal.util.AUDIO_FORMAT
 import com.junkfood.seal.util.AUDIO_QUALITY
 import com.junkfood.seal.util.CONVERT_M4A
@@ -91,8 +85,6 @@ import com.junkfood.seal.util.NOT_CONVERT
 import com.junkfood.seal.util.NOT_SPECIFIED
 import com.junkfood.seal.util.OPUS
 import com.junkfood.seal.util.PreferenceStrings
-import com.junkfood.seal.util.PreferenceUtil
-import com.junkfood.seal.util.PreferenceUtil.updateBoolean
 import com.junkfood.seal.util.PreferenceUtil.updateInt
 import com.junkfood.seal.util.PreferenceUtil.updateString
 import com.junkfood.seal.util.RES_HIGHEST
@@ -481,50 +473,6 @@ fun AudioConversionDialog(
 }
 
 @Composable
-fun AudioConversionQuickSettingsDialog(onDismissRequest: () -> Unit, onConfirm: () -> Unit = {}) {
-    var audioFormat by remember { mutableIntStateOf(PreferenceUtil.getAudioConvertFormat()) }
-    var convertAudio by AUDIO_CONVERT.booleanState
-    SealDialog(
-        onDismissRequest = onDismissRequest,
-        dismissButton = { DismissButton { onDismissRequest() } },
-        icon = { Icon(Icons.Outlined.Sync, null) },
-        title = { Text(stringResource(R.string.convert_audio_format)) },
-        confirmButton = {
-            ConfirmButton {
-                AUDIO_CONVERT.updateBoolean(convertAudio)
-                AUDIO_CONVERSION_FORMAT.updateInt(audioFormat)
-                onConfirm()
-                onDismissRequest()
-            }
-        },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(
-                    modifier =
-                        Modifier.fillMaxWidth().padding(bottom = 12.dp).padding(horizontal = 24.dp),
-                    text = stringResource(R.string.convert_audio_format_desc),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                DialogSingleChoiceItem(
-                    text = stringResource(id = R.string.not_convert),
-                    selected = !convertAudio,
-                ) {
-                    convertAudio = false
-                }
-                for (i in CONVERT_MP3..CONVERT_M4A) DialogSingleChoiceItem(
-                    modifier = Modifier,
-                    text = PreferenceStrings.getAudioConvertDesc(i),
-                    selected = audioFormat == i && convertAudio,
-                ) {
-                    audioFormat = i
-                    convertAudio = true
-                }
-            }
-        },
-    )
-}
-
-@Composable
 @Preview
 fun VideoFormatDialog(
     videoFormatPreference: Int = FORMAT_COMPATIBILITY,
@@ -777,7 +725,6 @@ fun VideoQualityDialog(
     )
 }
 
-private const val subtitleOptions = "https://github.com/yt-dlp/yt-dlp#subtitle-options"
 private const val sortingFormats = "https://github.com/yt-dlp/yt-dlp#sorting-formats"
 
 @Composable
@@ -896,50 +843,6 @@ fun SubtitleConversionDialog(onDismissRequest: () -> Unit) {
                     }
                 }
             }
-        },
-    )
-}
-
-@Composable
-@Preview
-fun VideoQualityPreferenceChip(
-    modifier: Modifier = Modifier,
-    videoQualityPreference: Int = FORMAT_COMPATIBILITY,
-    enabled: Boolean = true,
-    onClick: () -> Unit = {},
-) {
-    ElevatedAssistChip(
-        modifier = modifier,
-        onClick = onClick,
-        label = { Text(text = PreferenceStrings.getVideoFormatLabel(videoQualityPreference)) },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Outlined.VideoSettings,
-                contentDescription = null,
-                modifier = Modifier.size(AssistChipDefaults.IconSize),
-            )
-        },
-    )
-}
-
-@Composable
-@Preview
-fun VideoResolutionChip(
-    modifier: Modifier = Modifier,
-    videoResolution: Int = 0,
-    enabled: Boolean = true,
-    onClick: () -> Unit = {},
-) {
-    ElevatedAssistChip(
-        modifier = modifier,
-        onClick = onClick,
-        label = { Text(text = PreferenceStrings.getVideoResolutionDesc(videoResolution)) },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Outlined.VideoSettings,
-                contentDescription = null,
-                modifier = Modifier.size(AssistChipDefaults.IconSize),
-            )
         },
     )
 }

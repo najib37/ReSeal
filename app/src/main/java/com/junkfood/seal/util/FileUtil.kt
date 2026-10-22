@@ -13,7 +13,6 @@ import androidx.annotation.CheckResult
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import com.junkfood.seal.App.Companion.context
-import com.junkfood.seal.R
 import java.io.File
 import okhttp3.internal.closeQuietly
 
@@ -27,14 +26,6 @@ fun String.isAudioFile(): Boolean = contains(AUDIO_FILE)
 private const val PRIVATE_DIRECTORY_SUFFIX = ".Seal"
 
 object FileUtil {
-    fun openFileFromResult(downloadResult: Result<List<String>>) {
-        val filePaths = downloadResult.getOrNull()
-        if (filePaths.isNullOrEmpty()) return
-        openFile(filePaths.first()) {
-            ToastUtil.makeToastSuspend(context.getString(R.string.file_unavailable))
-        }
-    }
-
     inline fun openFile(path: String, onFailureCallback: (Throwable) -> Unit) =
         path
             .runCatching {

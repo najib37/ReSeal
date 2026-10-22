@@ -65,13 +65,6 @@ private fun String.toDomain(): String {
     return this.replace(domainRegex, "")
 }
 
-private fun makeCookie(url: String, cookieString: String): Cookie {
-    // Split on the first "=" only; values (e.g. base64 padding) may contain more
-    cookieString.split("=", limit = 2).run {
-        return Cookie(url = url, name = first().trim(), value = getOrElse(1) { "" })
-    }
-}
-
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +73,6 @@ fun WebViewPage(cookiesViewModel: CookiesViewModel, onDismissRequest: () -> Unit
     val state by cookiesViewModel.stateFlow.collectAsStateWithLifecycle()
 
     val cookieManager = CookieManager.getInstance()
-    val cookieSet = remember { mutableSetOf<Cookie>() }
     val websiteUrl = state.editingCookieProfile.url
     val webViewState = rememberWebViewState(websiteUrl)
 

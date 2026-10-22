@@ -48,14 +48,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.theme.FixedAccentColors
 import com.junkfood.seal.ui.theme.SealTheme
-import com.junkfood.seal.ui.theme.applyOpacity
 import com.kyant.monet.LocalTonalPalettes
 import com.kyant.monet.TonalPalettes.Companion.toTonalPalettes
 
@@ -178,46 +175,6 @@ fun PreferenceSingleChoiceItem(
             modifier = Modifier.clearAndSetSemantics {},
         )
     }
-}
-
-@Composable
-internal fun PreferenceItemTitle(
-    modifier: Modifier = Modifier,
-    text: String,
-    maxLines: Int = 2,
-    style: TextStyle = PreferenceTitle,
-    enabled: Boolean,
-    color: Color = MaterialTheme.colorScheme.onBackground,
-    overflow: TextOverflow = TextOverflow.Ellipsis,
-) {
-    Text(
-        modifier = modifier,
-        text = text,
-        maxLines = maxLines,
-        style = style,
-        color = color.applyOpacity(enabled),
-        overflow = overflow,
-    )
-}
-
-@Composable
-internal fun PreferenceItemDescription(
-    modifier: Modifier = Modifier,
-    text: String,
-    maxLines: Int = Int.MAX_VALUE,
-    style: TextStyle = MaterialTheme.typography.bodyMedium,
-    enabled: Boolean,
-    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    overflow: TextOverflow = TextOverflow.Ellipsis,
-) {
-    Text(
-        modifier = modifier,
-        text = text,
-        maxLines = maxLines,
-        style = style,
-        color = color.applyOpacity(enabled),
-        overflow = overflow,
-    )
 }
 
 @Composable

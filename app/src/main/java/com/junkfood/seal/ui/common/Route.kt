@@ -22,7 +22,6 @@ object Route {
     const val TEMPLATE = "template"
     const val TEMPLATE_EDIT = "template_edit"
     const val DARK_THEME = "dark_theme"
-    const val DOWNLOAD_QUEUE = "queue"
     const val DOWNLOAD_FORMAT = "download_format"
     const val NETWORK_PREFERENCES = "network_preferences"
     const val COOKIE_PROFILE = "cookie_profile"

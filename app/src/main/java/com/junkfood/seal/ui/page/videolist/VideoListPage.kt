@@ -211,7 +211,6 @@ fun VideoListPage(
 
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
-    // ✨ NEW: State for Clear All dialog
     var showClearAllDialog by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
@@ -425,7 +424,6 @@ fun VideoListPage(
                                     },
                                 )
 
-                                // ✨ NEW: Clear All Downloads menu item
                                 if (fullVideoList.isNotEmpty()) {
                                     DropdownMenuItem(
                                         leadingIcon = {
@@ -789,7 +787,6 @@ fun VideoListPage(
         }
     }
 
-    // ✨ NEW: Clear All Downloads confirmation dialog
     if (showClearAllDialog) {
         AlertDialog(
             onDismissRequest = { showClearAllDialog = false },

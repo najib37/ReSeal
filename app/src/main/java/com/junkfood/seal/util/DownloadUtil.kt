@@ -390,15 +390,6 @@ object DownloadUtil {
     private fun YoutubeDLRequest.useDownloadArchive(): YoutubeDLRequest =
         this.addOption("--download-archive", context.getArchiveFile().absolutePath)
 
-    @CheckResult
-    suspend fun getCookieListFromDatabase(): Result<List<Cookie>> = runCatching {
-        val profiles = DatabaseUtil.getCookieProfileList()
-        if (profiles.isEmpty()) throw Exception("There is no cookies in the database!")
-        profiles
-            .flatMap { parseNetscapeCookies(it.content) }
-            .ifEmpty { throw Exception("There is no cookies in the database!") }
-    }
-
     suspend fun getCookiesContentFromDatabase(): Result<String> = runCatching {
         val profiles = DatabaseUtil.getCookieProfileList()
         if (profiles.isEmpty()) throw Exception("There is no cookies in the database!")
