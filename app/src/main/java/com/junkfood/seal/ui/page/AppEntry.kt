@@ -90,6 +90,7 @@ fun AppEntry(dialogViewModel: DownloadDialogViewModel) {
     val view = LocalView.current
     val windowWidth = LocalWindowWidthState.current
     val sheetState by dialogViewModel.sheetStateFlow.collectAsStateWithLifecycle()
+    val sheetValue by dialogViewModel.sheetValueFlow.collectAsStateWithLifecycle()
     val cookiesViewModel: CookiesViewModel = koinViewModel()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -105,8 +106,15 @@ fun AppEntry(dialogViewModel: DownloadDialogViewModel) {
         }
     }
 
-    if (sheetState is DownloadDialogViewModel.SheetState.Configure) {
-        if (navController.currentDestination?.route != Route.HOME) {
+    // A shared link opens the configure sheet over the queue: bring HOME into view. Only while the
+    // sheet is shown, since sheetState stays Configure after it hides (e.g. after a Fast download),
+    // and checking it alone would pop every drawer navigation straight back to HOME.
+    LaunchedEffect(sheetState, sheetValue) {
+        if (
+            sheetValue == DownloadDialogViewModel.SheetValue.Expanded &&
+                sheetState is DownloadDialogViewModel.SheetState.Configure &&
+                navController.currentDestination?.route != Route.HOME
+        ) {
             navController.popBackStack(route = Route.HOME, inclusive = false, saveState = true)
         }
     }
