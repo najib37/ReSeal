@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Cookie
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
@@ -290,12 +291,13 @@ fun CookieProfilePage(
                     },
                 )
             }
+            // Saved profiles and the "generate" action form one segmented group
             item {
-                PreferenceGroup {
+                PreferenceGroup(modifier = Modifier.padding(top = 8.dp)) {
                     cookies.forEach { item ->
                         PreferenceItemVariant(
-                            modifier = Modifier.padding(vertical = 4.dp),
                             title = item.url,
+                            icon = Icons.Outlined.Language,
                             onClick = {
                                 cookiesViewModel.setEditingProfile(item)
                                 showEditDialog = true
@@ -309,11 +311,6 @@ fun CookieProfilePage(
                             onLongClickLabel = stringResource(R.string.remove),
                         )
                     }
-                }
-            }
-
-            item {
-                PreferenceGroup {
                     PreferenceItemVariant(
                         title = stringResource(id = R.string.generate_new_cookies),
                         icon = Icons.Outlined.Add,
@@ -324,13 +321,13 @@ fun CookieProfilePage(
                 }
             }
             item {
-                androidx.compose.material3.HorizontalDivider()
                 val cookiesCount = cookieList.size
                 val siteCount = cookieList.distinctBy { it.domain }.size
+                // Footer note, inset like the group titles
                 Text(
                     text = stringResource(R.string.cookies_in_database, cookiesCount, siteCount),
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
