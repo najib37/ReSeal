@@ -98,7 +98,14 @@ import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.component.SlideUpPage
 import com.junkfood.seal.ui.component.rememberSlideUpPageState
 import com.junkfood.seal.ui.component.SingleChoiceChip
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import com.junkfood.seal.ui.component.ConnectedChoiceRow
+import com.junkfood.seal.ui.component.PreferenceIconContainer
 import com.junkfood.seal.ui.component.VideoFilterChip
 import com.junkfood.seal.ui.page.command.TemplatePickerDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.ActionButton.Download
@@ -402,8 +409,8 @@ private fun DownloadDialogContent(
 
             is Loading -> {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 120.dp)) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    LoadingIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).size(64.dp)
                     )
                 }
             }
@@ -545,7 +552,6 @@ private fun ConfigurePage(
     Column {
         Column(modifier = modifier.padding(horizontal = 20.dp)) {
             Header(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
                 title = stringResource(R.string.settings_before_download),
                 icon = Icons.Outlined.DoneAll,
             )
@@ -694,7 +700,6 @@ fun ConfigurePagePlaylistVariant(
     Column {
         Column(modifier = modifier.padding(horizontal = 20.dp)) {
             Header(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
                 title = stringResource(R.string.settings_before_download),
                 icon = Icons.Outlined.DoneAll,
             )
@@ -890,56 +895,63 @@ private fun SingleChoiceItem(
             label = "",
         )
 
+    // Expressive choice card: tonal icon circle, title + description, trailing radio; the selected
+    // card fills with secondaryContainer and its corners morph rounder
     Surface(
         selected = selected,
         onClick = onClick,
         color = color,
         shape = RoundedCornerShape(corner),
-        modifier = modifier.padding(vertical = 4.dp).run { if (!enabled) alpha(0.32f) else this },
+        modifier =
+            modifier
+                .padding(vertical = 4.dp)
+                .semantics { role = Role.RadioButton }
+                .run { if (!enabled) alpha(0.32f) else this },
         enabled = enabled,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    icon?.invoke()
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = title, style = MaterialTheme.typography.titleMedium)
-                }
+            icon?.let {
+                PreferenceIconContainer(
+                    containerColor =
+                        if (selected) MaterialTheme.colorScheme.secondary
+                        else MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor =
+                        if (selected) MaterialTheme.colorScheme.onSecondary
+                        else MaterialTheme.colorScheme.onSecondaryContainer,
+                    content = it,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = title, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = desc,
-                    style = MaterialTheme.typography.bodySmall,
-                    minLines = 2,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 32.dp),
                 )
             }
             action?.invoke()
+            RadioButton(selected = selected, onClick = null)
         }
     }
 }
 
 @Composable
+@Suppress("UNUSED_PARAMETER") // icon kept for callers; sheets now use a left-aligned title only
 internal fun Header(modifier: Modifier = Modifier, icon: ImageVector, title: String) {
-    Column(modifier = modifier) {
-        Icon(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            imageVector = icon,
-            contentDescription = null,
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            modifier =
-                Modifier.align(Alignment.CenterHorizontally).padding(top = 16.dp, bottom = 8.dp),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
-    }
+    // Left-aligned emphasized title, matching the new-download and task options sheets
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmallEmphasized,
+        modifier = modifier.padding(bottom = 8.dp),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -1127,24 +1139,23 @@ private fun ActionButtons(
             Download
         }
 
-    val state = rememberLazyListState()
-    LazyRow(
+    // Full-width Expressive pair, matching the new-download sheet
+    Row(
         modifier = modifier.fillMaxWidth().padding(top = 12.dp),
-        horizontalArrangement = Arrangement.End,
-        state = state,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        item {
-            OutlinedButtonWithIcon(
-                modifier = Modifier.padding(horizontal = 12.dp),
-                onClick = onCancel,
-                icon = Icons.Outlined.Cancel,
-                text = stringResource(R.string.cancel),
-            )
+        OutlinedButton(
+            onClick = onCancel,
+            shapes = ButtonDefaults.shapes(),
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+        ) {
+            Text(stringResource(R.string.cancel))
         }
-        item {
+        run {
             Button(
-                modifier = Modifier,
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                shapes = ButtonDefaults.shapes(),
                 onClick = {
                     when (action) {
                         FetchInfo -> onFetchInfo()
@@ -1152,7 +1163,6 @@ private fun ActionButtons(
                         StartTask -> onTaskStart()
                     }
                 },
-                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                 enabled = canProceed,
             ) {
                 AnimatedContent(
