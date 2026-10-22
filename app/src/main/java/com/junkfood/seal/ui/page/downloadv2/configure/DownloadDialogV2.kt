@@ -562,99 +562,106 @@ private fun ConfigurePage(
     }
 
     Column {
-        Column(modifier = modifier.padding(horizontal = 20.dp)) {
-            Header(
-                title = stringResource(R.string.settings_before_download),
-                icon = Icons.Outlined.DoneAll,
-            )
-            DrawerSheetSubtitle(text = stringResource(id = R.string.download_type))
-            DownloadTypeSelectionGroup(
-                typeEntries = config.typeEntries,
-                selectedType = selectedType,
-                onSelect = { selectedType = it },
-            )
-            Column(modifier = Modifier.animateContentSize()) {
-                if (selectedType != Command) {
-                    DrawerSheetSubtitle(
-                        text = stringResource(id = R.string.format_selection),
-                        modifier = Modifier,
-                    )
-                    SingleChoiceItem(
-                        title = stringResource(R.string.fast_download),
-                        desc = stringResource(R.string.fast_download_desc),
-                        icon = {
-                            Icon(
-                                Icons.Outlined.Bolt,
-                                null,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        selected = !useFormatSelection,
-                        onClick = { useFormatSelection = false },
-                    )
-                    AnimatedVisibility(visible = isFastDownload) {
-                        FastDownloadOptions(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            audioOnly = selectedType == Audio,
-                            heightIndex = fastHeightIndex,
-                            audioLevel = fastAudioLevel,
-                            onHeightIndexChange = { fastHeightIndex = it },
-                            onAudioLevelChange = { fastAudioLevel = it },
+        // Options scroll when taller than the screen (e.g. with the Fast download sliders), so
+        // the action buttons stay visible
+        Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+            Column(modifier = modifier.padding(horizontal = 20.dp)) {
+                Header(
+                    title = stringResource(R.string.settings_before_download),
+                    icon = Icons.Outlined.DoneAll,
+                )
+                DrawerSheetSubtitle(text = stringResource(id = R.string.download_type))
+                DownloadTypeSelectionGroup(
+                    typeEntries = config.typeEntries,
+                    selectedType = selectedType,
+                    onSelect = { selectedType = it },
+                )
+                Column(modifier = Modifier.animateContentSize()) {
+                    if (selectedType != Command) {
+                        DrawerSheetSubtitle(
+                            text = stringResource(id = R.string.format_selection),
+                            modifier = Modifier,
                         )
-                    }
-                    Custom(
-                        selected = useFormatSelection,
-                        enabled = selectedType != Playlist,
-                        onClick = { useFormatSelection = true },
-                    )
-                } else {
-                    if (showTemplateSelectionDialog) {
-                        TemplatePickerDialog { showTemplateSelectionDialog = false }
-                    }
-                    if (showTemplateCreatorDialog) {
-                        CommandTemplateDialog(
-                            onDismissRequest = { showTemplateCreatorDialog = false },
-                            confirmationCallback = { scope.launch { TEMPLATE_ID.updateInt(it) } },
+                        SingleChoiceItem(
+                            title = stringResource(R.string.fast_download),
+                            desc = stringResource(R.string.fast_download_desc),
+                            icon = {
+                                Icon(
+                                    Icons.Outlined.Bolt,
+                                    null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            selected = !useFormatSelection,
+                            onClick = { useFormatSelection = false },
                         )
-                    }
-                    if (showTemplateEditorDialog) {
-                        CommandTemplateDialog(
-                            commandTemplate = template,
-                            onDismissRequest = { showTemplateEditorDialog = false },
-                        )
-                    }
-                    DrawerSheetSubtitle(
-                        text = stringResource(id = R.string.template_selection),
-                        modifier = Modifier,
-                    )
-                    LazyRow(modifier = Modifier) {
-                        item {
-                            ButtonChip(
-                                icon = Icons.Outlined.Code,
-                                label = template.name,
-                                onClick = { showTemplateSelectionDialog = true },
+                        AnimatedVisibility(visible = isFastDownload) {
+                            FastDownloadOptions(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                audioOnly = selectedType == Audio,
+                                heightIndex = fastHeightIndex,
+                                audioLevel = fastAudioLevel,
+                                onHeightIndexChange = { fastHeightIndex = it },
+                                onAudioLevelChange = { fastAudioLevel = it },
                             )
                         }
-                        item {
-                            ButtonChip(
-                                icon = Icons.Outlined.NewLabel,
-                                label = stringResource(id = R.string.new_template),
-                                onClick = { showTemplateCreatorDialog = true },
+                        Custom(
+                            selected = useFormatSelection,
+                            enabled = selectedType != Playlist,
+                            onClick = { useFormatSelection = true },
+                        )
+                    } else {
+                        if (showTemplateSelectionDialog) {
+                            TemplatePickerDialog { showTemplateSelectionDialog = false }
+                        }
+                        if (showTemplateCreatorDialog) {
+                            CommandTemplateDialog(
+                                onDismissRequest = { showTemplateCreatorDialog = false },
+                                confirmationCallback = {
+                                    scope.launch { TEMPLATE_ID.updateInt(it) }
+                                },
                             )
                         }
-                        item {
-                            ButtonChip(
-                                icon = Icons.Outlined.Edit,
-                                label = stringResource(id = R.string.edit_template, template.name),
-                                onClick = { showTemplateEditorDialog = true },
+                        if (showTemplateEditorDialog) {
+                            CommandTemplateDialog(
+                                commandTemplate = template,
+                                onDismissRequest = { showTemplateEditorDialog = false },
                             )
+                        }
+                        DrawerSheetSubtitle(
+                            text = stringResource(id = R.string.template_selection),
+                            modifier = Modifier,
+                        )
+                        LazyRow(modifier = Modifier) {
+                            item {
+                                ButtonChip(
+                                    icon = Icons.Outlined.Code,
+                                    label = template.name,
+                                    onClick = { showTemplateSelectionDialog = true },
+                                )
+                            }
+                            item {
+                                ButtonChip(
+                                    icon = Icons.Outlined.NewLabel,
+                                    label = stringResource(id = R.string.new_template),
+                                    onClick = { showTemplateCreatorDialog = true },
+                                )
+                            }
+                            item {
+                                ButtonChip(
+                                    icon = Icons.Outlined.Edit,
+                                    label =
+                                        stringResource(id = R.string.edit_template, template.name),
+                                    onClick = { showTemplateEditorDialog = true },
+                                )
+                            }
                         }
                     }
                 }
             }
+            var expanded by remember { mutableStateOf(false) }
+            ExpandableTitle(expanded = expanded, onClick = { expanded = true }) { settingChips() }
         }
-        var expanded by remember { mutableStateOf(false) }
-        ExpandableTitle(expanded = expanded, onClick = { expanded = true }) { settingChips() }
 
         ActionButtons(
             modifier = Modifier.padding(horizontal = 20.dp),
