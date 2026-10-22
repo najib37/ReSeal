@@ -16,6 +16,9 @@ A fork of [Seal](https://github.com/JunkFood02/Seal) with a faster download flow
 ## 📱 Screenshots
 
 <div align="center">
+<img src="docs/screenshots/home.jpg" width="30%" alt="Download queue" />
+<img src="docs/screenshots/sidebar.jpg" width="30%" alt="Navigation sidebar" />
+<img src="docs/screenshots/download-actions.jpg" width="30%" alt="Actions for a downloaded video" />
 <img src="docs/screenshots/fast-download.jpg" width="30%" alt="Fast download: video and audio quality sliders" />
 <img src="docs/screenshots/custom-formats.jpg" width="30%" alt="Custom: pick formats and subtitles" />
 <img src="docs/screenshots/playlist.jpg" width="30%" alt="Pick videos from a playlist" />
