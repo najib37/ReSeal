@@ -49,7 +49,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.junkfood.seal.R
 import com.junkfood.seal.database.objects.CommandTemplate
 import com.junkfood.seal.ui.component.AdjacentLabel
@@ -92,8 +91,7 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                         text =
                             stringResource(
                                 if (templateId <= 0) R.string.new_template else R.string.edit
-                            ),
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                            )
                     )
                 },
                 navigationIcon = { BackButton { onDismissRequest() } },

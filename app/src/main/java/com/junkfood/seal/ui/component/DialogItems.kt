@@ -17,7 +17,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -35,11 +34,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.junkfood.seal.R
 
 @Composable
@@ -59,6 +58,7 @@ fun DialogSingleChoiceItem(
                     onClick = onClick,
                     indication = LocalIndication.current,
                     interactionSource = interactionSource,
+                    role = Role.RadioButton,
                 )
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp),
@@ -73,7 +73,7 @@ fun DialogSingleChoiceItem(
         )
         Text(
             text = text,
-            style = LocalTextStyle.current.copy(fontSize = 16.sp),
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(vertical = 8.dp),
         )
     }
@@ -121,7 +121,12 @@ fun DialogSingleChoiceItemVariant(
     Row(
         modifier =
             modifier
-                .selectable(selected = selected, enabled = true, onClick = onClick)
+                .selectable(
+                    selected = selected,
+                    enabled = true,
+                    onClick = onClick,
+                    role = Role.RadioButton,
+                )
                 .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start,
@@ -159,7 +164,12 @@ fun CheckBoxItem(
         modifier =
             Modifier.padding(top = 12.dp)
                 .fillMaxWidth()
-                .toggleable(value = checked, enabled = true, onValueChange = onValueChange)
+                .toggleable(
+                    value = checked,
+                    enabled = true,
+                    onValueChange = onValueChange,
+                    role = Role.Checkbox,
+                )
     ) {
         Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
@@ -183,7 +193,7 @@ fun DialogSwitchItem(
         modifier =
             modifier
                 .fillMaxWidth()
-                .toggleable(value = value, onValueChange = onValueChange)
+                .toggleable(value = value, onValueChange = onValueChange, role = Role.Switch)
                 .padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

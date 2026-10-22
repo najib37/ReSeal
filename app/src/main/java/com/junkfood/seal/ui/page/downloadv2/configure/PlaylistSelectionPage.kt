@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.Close
@@ -52,14 +51,14 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.junkfood.seal.R
 import com.junkfood.seal.download.DownloaderV2
 import com.junkfood.seal.download.TaskFactory
 import com.junkfood.seal.ui.common.HapticFeedback.slightHapticFeedback
 import com.junkfood.seal.ui.component.PlaylistItem
 import com.junkfood.seal.ui.component.SealModalBottomSheet
-import com.junkfood.seal.ui.component.SealModalBottomSheetM2Variant
+import com.junkfood.seal.ui.component.SlideUpPage
+import com.junkfood.seal.ui.component.rememberSlideUpPageState
 import com.junkfood.seal.ui.page.download.PlaylistSelectionDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.SelectionState
 import com.junkfood.seal.ui.page.settings.format.AudioQuickSettingsDialog
@@ -95,11 +94,7 @@ fun PlaylistSelectionPage(
 
     var taskList by remember { mutableStateOf(emptyList<TaskFactory.TaskWithState>()) }
 
-    val sheetState =
-        androidx.compose.material.rememberModalBottomSheetState(
-            initialValue = ModalBottomSheetValue.Hidden,
-            skipHalfExpanded = true,
-        )
+    val sheetState = rememberSlideUpPageState()
 
     LaunchedEffect(state) { sheetState.show() }
     val scope = rememberCoroutineScope()
@@ -113,7 +108,7 @@ fun PlaylistSelectionPage(
 
     val configureSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    SealModalBottomSheetM2Variant(sheetState = sheetState, sheetGesturesEnabled = false) {
+    SlideUpPage(state = sheetState) {
         PlaylistSelectionPageImpl(result = state.result, onDismissRequest = onBack) {
             taskList = it
             showConfigurationSheet = true
@@ -253,8 +248,7 @@ fun PlaylistSelectionPageImpl(
                                 stringResource(id = R.string.download_playlist)
                             else
                                 stringResource(id = R.string.selected_item_count)
-                                    .format(selectedItems.size),
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                                    .format(selectedItems.size)
                     )
                 },
                 navigationIcon = {

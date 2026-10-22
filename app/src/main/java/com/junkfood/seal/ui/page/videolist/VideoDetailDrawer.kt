@@ -1,10 +1,9 @@
-@file:OptIn(ExperimentalMaterialApi::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.junkfood.seal.ui.page.videolist
 
 import android.content.Intent
 import android.content.res.Configuration
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,9 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.ModalBottomSheetState
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
@@ -26,14 +22,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
@@ -48,14 +45,14 @@ import com.junkfood.seal.ui.common.HapticFeedback.slightHapticFeedback
 import com.junkfood.seal.ui.component.FilledTonalButtonWithIcon
 import com.junkfood.seal.ui.component.LongTapTextButton
 import com.junkfood.seal.ui.component.OutlinedButtonWithIcon
-import com.junkfood.seal.ui.component.SealModalBottomSheetM2
+import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.util.FileUtil
 import com.junkfood.seal.util.ToastUtil
 
 @Composable
 fun VideoDetailDrawer(
-    sheetState: ModalBottomSheetState,
+    sheetState: SheetState,
     info: DownloadedVideoInfo,
     isFileAvailable: Boolean = true,
     onDismissRequest: () -> Unit = {},
@@ -65,7 +62,6 @@ fun VideoDetailDrawer(
     val view = LocalView.current
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
-    BackHandler(sheetState.targetValue == ModalBottomSheetValue.Expanded) { onDismissRequest() }
 
     val onReDownload =
         remember(info) {
@@ -116,11 +112,7 @@ fun VideoDetailDrawer(
 private fun DrawerPreview() {
     SealTheme {
         VideoDetailDrawerImpl(
-            sheetState =
-                ModalBottomSheetState(
-                    ModalBottomSheetValue.Expanded,
-                    density = LocalDensity.current,
-                ),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             onReDownload = {},
         )
     }
@@ -129,8 +121,7 @@ private fun DrawerPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VideoDetailDrawerImpl(
-    sheetState: ModalBottomSheetState =
-        ModalBottomSheetState(ModalBottomSheetValue.Hidden, density = LocalDensity.current),
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     title: String = stringResource(id = R.string.video_title_sample_text),
     author: String = stringResource(id = R.string.video_creator_sample_text),
     url: String = "https://www.example.com",
@@ -143,10 +134,11 @@ fun VideoDetailDrawerImpl(
 ) {
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
-    SealModalBottomSheetM2(
+    SealModalBottomSheet(
         sheetState = sheetState,
+        onDismissRequest = onDismissRequest,
         contentPadding = PaddingValues(horizontal = 20.dp),
-        sheetContent = {
+        content = {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
                 SelectionContainer {
                     Text(

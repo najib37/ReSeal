@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Cancel
@@ -38,6 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,7 +57,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.junkfood.seal.Downloader
 import com.junkfood.seal.R
@@ -73,14 +72,13 @@ import com.junkfood.seal.ui.component.OutlinedButtonChip
 import com.junkfood.seal.ui.component.OutlinedButtonWithIcon
 import com.junkfood.seal.ui.component.PasteFromClipBoardButton
 import com.junkfood.seal.ui.component.SealDialog
-import com.junkfood.seal.ui.component.SealModalBottomSheetM2
+import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.component.TaskStatus
 import com.junkfood.seal.ui.page.settings.command.CommandTemplateDialog
 import com.junkfood.seal.util.PreferenceUtil
 import com.junkfood.seal.util.PreferenceUtil.updateInt
 import com.junkfood.seal.util.TEMPLATE_ID
 import com.junkfood.seal.util.matchUrlFromString
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -91,11 +89,7 @@ fun TaskListPage(onNavigateBack: () -> Unit, onNavigateToDetail: (Int) -> Unit) 
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     var showBottomSheet by remember { mutableStateOf(false) }
-    val sheetState =
-        androidx.compose.material.rememberModalBottomSheetState(
-            skipHalfExpanded = true,
-            initialValue = ModalBottomSheetValue.Hidden,
-        )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val keyboardController = LocalSoftwareKeyboardController.current
 
 
@@ -104,10 +98,7 @@ fun TaskListPage(onNavigateBack: () -> Unit, onNavigateToDetail: (Int) -> Unit) 
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(R.string.running_tasks),
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                    )
+                    Text(text = stringResource(R.string.running_tasks))
                 },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 actions = {},
@@ -116,13 +107,7 @@ fun TaskListPage(onNavigateBack: () -> Unit, onNavigateToDetail: (Int) -> Unit) 
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    scope.launch {
-                        showBottomSheet = true
-                        delay(50)
-                        sheetState.show()
-                    }
-                },
+                onClick = { showBottomSheet = true },
                 modifier = Modifier.padding(vertical = 18.dp, horizontal = 6.dp),
             ) {
                 Icon(Icons.Outlined.Add, stringResource(id = R.string.new_task))
@@ -161,15 +146,18 @@ fun TaskListPage(onNavigateBack: () -> Unit, onNavigateToDetail: (Int) -> Unit) 
         }
     }
     val onDismissRequest: () -> Unit = {
+        keyboardController?.hide()
         scope.launch { sheetState.hide() }.invokeOnCompletion { showBottomSheet = false }
     }
 
-    BackHandler(showBottomSheet) { onDismissRequest() }
-
     if (showBottomSheet)
-        SealModalBottomSheetM2(
+        SealModalBottomSheet(
             sheetState = sheetState,
-            sheetContent = {
+            onDismissRequest = {
+                keyboardController?.hide()
+                showBottomSheet = false
+            },
+            content = {
                 val clipboardManager = LocalClipboardManager.current
 
                 var showTemplateSelectionDialog by remember { mutableStateOf(false) }
@@ -187,11 +175,8 @@ fun TaskListPage(onNavigateBack: () -> Unit, onNavigateToDetail: (Int) -> Unit) 
 
                 var url by remember { mutableStateOf("") }
 
-                LaunchedEffect(sheetState.targetValue) {
-                    if (sheetState.targetValue == ModalBottomSheetValue.Expanded)
-                        url = matchUrlFromString(clipboardManager.getText()?.text.toString(), true)
-                    if (sheetState.targetValue == ModalBottomSheetValue.Hidden)
-                        keyboardController?.hide()
+                LaunchedEffect(Unit) {
+                    url = matchUrlFromString(clipboardManager.getText()?.text.toString(), true)
                 }
 
                 Column(Modifier.fillMaxWidth()) {
