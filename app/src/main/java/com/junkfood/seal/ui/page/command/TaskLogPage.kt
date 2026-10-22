@@ -46,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.junkfood.seal.Downloader
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.ButtonChip
@@ -66,10 +65,7 @@ fun TaskLogPage(onNavigateBack: () -> Unit, taskHashCode: Int) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(R.string.logs),
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                    )
+                    Text(text = stringResource(R.string.logs))
                 },
                 navigationIcon = {
                     IconButton(onClick = { onNavigateBack() }) {

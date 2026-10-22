@@ -33,7 +33,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DownloadDone
@@ -97,7 +96,8 @@ import com.junkfood.seal.ui.component.ButtonChip
 import com.junkfood.seal.ui.component.DrawerSheetSubtitle
 import com.junkfood.seal.ui.component.OutlinedButtonWithIcon
 import com.junkfood.seal.ui.component.SealModalBottomSheet
-import com.junkfood.seal.ui.component.SealModalBottomSheetM2Variant
+import com.junkfood.seal.ui.component.SlideUpPage
+import com.junkfood.seal.ui.component.rememberSlideUpPageState
 import com.junkfood.seal.ui.component.SingleChoiceChip
 import com.junkfood.seal.ui.component.SingleChoiceSegmentedButton
 import com.junkfood.seal.ui.component.VideoFilterChip
@@ -457,17 +457,13 @@ fun FormatPage(
     state: SelectionState.FormatSelection,
     onDismissRequest: () -> Unit,
 ) {
-    val sheetState =
-        androidx.compose.material.rememberModalBottomSheetState(
-            initialValue = ModalBottomSheetValue.Hidden,
-            skipHalfExpanded = true,
-        )
+    val sheetState = rememberSlideUpPageState()
 
     LaunchedEffect(state) { sheetState.show() }
     val scope = rememberCoroutineScope()
     BackHandler { scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() } }
 
-    SealModalBottomSheetM2Variant(sheetState = sheetState, sheetGesturesEnabled = false) {
+    SlideUpPage(state = sheetState) {
         FormatPage(
             modifier = modifier,
             videoInfo = state.info,

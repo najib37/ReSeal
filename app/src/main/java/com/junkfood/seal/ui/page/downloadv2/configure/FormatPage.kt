@@ -73,7 +73,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.junkfood.seal.R
 import com.junkfood.seal.download.DownloaderV2
 import com.junkfood.seal.download.TaskFactory
@@ -395,10 +394,7 @@ private fun FormatPageImpl(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(R.string.format_selection),
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                    )
+                    Text(text = stringResource(R.string.format_selection))
                 },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {

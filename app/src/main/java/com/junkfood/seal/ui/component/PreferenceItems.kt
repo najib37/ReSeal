@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -231,7 +232,10 @@ fun PreferenceSingleChoiceItem(
     contentPadding: PaddingValues = PaddingValues(horizontal = 8.dp, vertical = 16.dp),
     onClick: () -> Unit,
 ) {
-    Surface(modifier = Modifier.selectable(selected = selected, onClick = onClick)) {
+    Surface(
+        modifier =
+            Modifier.selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+    ) {
         Row(
             modifier = modifier.fillMaxWidth().padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
@@ -359,6 +363,7 @@ fun PreferenceSwitchVariant(
                 onValueChange = { onClick() },
                 indication = LocalIndication.current,
                 interactionSource = interactionSource,
+                role = Role.Switch,
             )
     ) {
         Row(
@@ -413,6 +418,7 @@ fun PreferenceSwitch(
                 onValueChange = { onClick() },
                 indication = LocalIndication.current,
                 interactionSource = interactionSource,
+                role = Role.Switch,
             )
     ) {
         Row(
@@ -466,6 +472,7 @@ fun PreferenceSwitchWithDivider(
                 enabled = enabled,
                 onClick = onClick,
                 onClickLabel = stringResource(id = R.string.open_settings),
+                role = Role.Button,
             )
     ) {
         Row(
@@ -537,7 +544,7 @@ fun PreferencesHintCard(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .clip(MaterialTheme.shapes.extraLarge)
                 .background(containerColor)
-                .clickable { onClick() }
+                .clickable(role = Role.Button) { onClick() }
                 .padding(horizontal = 12.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -609,6 +616,7 @@ fun PreferenceSwitchWithContainer(
                     onValueChange = { onClick() },
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
+                    role = Role.Switch,
                 )
                 .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -649,7 +657,7 @@ fun CreditItem(
     enabled: Boolean = true,
     onClick: () -> Unit = {},
 ) {
-    Surface(modifier = Modifier.clickable { onClick() }) {
+    Surface(modifier = Modifier.clickable(role = Role.Button) { onClick() }) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -704,7 +712,13 @@ fun TemplateItem(
                         )
                     )
                 else {
-                    then(this.toggleable(value = checked, onValueChange = onCheckedChange))
+                    then(
+                        this.toggleable(
+                            value = checked,
+                            onValueChange = onCheckedChange,
+                            role = Role.Checkbox,
+                        )
+                    )
                 }
             }
     ) {

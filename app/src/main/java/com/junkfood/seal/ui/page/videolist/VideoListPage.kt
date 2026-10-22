@@ -26,14 +26,13 @@ import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.rememberModalBottomSheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -160,7 +159,7 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
 
     val fileSizeMap by
     viewModel.fileSizeMapFlow.collectAsStateWithLifecycle(initialValue = emptyMap())
-    val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val hostState = remember { SnackbarHostState() }
 
     var currentVideoInfo by remember { mutableStateOf(DownloadedVideoInfo()) }
@@ -523,11 +522,7 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
                                 onShowContextMenu = {
                                     view.slightHapticFeedback()
                                     currentVideoInfo = info
-                                    scope.launch {
-                                        showBottomSheet = true
-                                        delay(50)
-                                        sheetState.show()
-                                    }
+                                    showBottomSheet = true
                                 },
                             )
                         }

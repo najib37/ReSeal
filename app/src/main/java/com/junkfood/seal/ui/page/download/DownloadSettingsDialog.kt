@@ -1,7 +1,5 @@
 package com.junkfood.seal.ui.page.download
 
-import android.os.Build
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
@@ -18,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.Cancel
@@ -65,7 +62,6 @@ import com.junkfood.seal.ui.component.DrawerSheetSubtitle
 import com.junkfood.seal.ui.component.FilledButtonWithIcon
 import com.junkfood.seal.ui.component.OutlinedButtonWithIcon
 import com.junkfood.seal.ui.component.SealModalBottomSheet
-import com.junkfood.seal.ui.component.SealModalBottomSheetM2
 import com.junkfood.seal.ui.component.SingleChoiceChip
 import com.junkfood.seal.ui.component.VideoFilterChip
 import com.junkfood.seal.ui.page.command.TemplatePickerDialog
@@ -483,46 +479,17 @@ fun DownloadSettingDialog(
         }
 
         if (!useDialog) {
-            val useMD2BottomSheet = Build.VERSION.SDK_INT < 30
-            if (useMD2BottomSheet) {
-                val sheetState =
-                    androidx.compose.material.rememberModalBottomSheetState(
-                        initialValue = ModalBottomSheetValue.Hidden,
-                        skipHalfExpanded = true,
-                    )
-
-                BackHandler(sheetState.targetValue == ModalBottomSheetValue.Expanded) {
-                    scope.launch { sheetState.hide() }
-                }
-
-                LaunchedEffect(Unit) { sheetState.show() }
-
-                LaunchedEffect(sheetState.isVisible) {
-                    if (sheetState.targetValue == ModalBottomSheetValue.Hidden) {
-                        onDismissRequest()
-                    }
-                }
-
-                SealModalBottomSheetM2(
-                    sheetState = sheetState,
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    sheetContent = {
-                        SheetContent(onDismissRequest = { scope.launch { sheetState.hide() } })
-                    },
-                )
-            } else {
-                val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-                val onSheetDismiss: () -> Unit = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() }
-                }
-
-                SealModalBottomSheet(
-                    sheetState = sheetState,
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    onDismissRequest = onDismissRequest,
-                    content = { SheetContent(onDismissRequest = onSheetDismiss) },
-                )
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            val onSheetDismiss: () -> Unit = {
+                scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() }
             }
+
+            SealModalBottomSheet(
+                sheetState = sheetState,
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                onDismissRequest = onDismissRequest,
+                content = { SheetContent(onDismissRequest = onSheetDismiss) },
+            )
         } else {
             AlertDialog(
                 onDismissRequest = onDismissRequest,

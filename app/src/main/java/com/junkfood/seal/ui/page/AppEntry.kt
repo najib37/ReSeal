@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -195,24 +198,24 @@ fun NavGraphBuilder.settingsGraph(
     cookiesViewModel: CookiesViewModel,
 ) {
     navigation(startDestination = Route.SETTINGS_PAGE, route = Route.SETTINGS) {
-        animatedComposable(Route.DOWNLOAD_DIRECTORY) {
+        settingsComposable(Route.DOWNLOAD_DIRECTORY) {
             DownloadDirectoryPreferences(onNavigateBack)
         }
-        animatedComposable(Route.SETTINGS_PAGE) {
+        settingsComposable(Route.SETTINGS_PAGE) {
             SettingsPage(onNavigateBack = onNavigateBack, onNavigateTo = onNavigateTo)
         }
-        animatedComposable(Route.GENERAL_DOWNLOAD_PREFERENCES) {
+        settingsComposable(Route.GENERAL_DOWNLOAD_PREFERENCES) {
             GeneralDownloadPreferences(onNavigateBack = { onNavigateBack() }) {
                 onNavigateTo(Route.TEMPLATE)
             }
         }
-        animatedComposable(Route.DOWNLOAD_FORMAT) {
+        settingsComposable(Route.DOWNLOAD_FORMAT) {
             DownloadFormatPreferences(onNavigateBack = onNavigateBack) {
                 onNavigateTo(Route.SUBTITLE_PREFERENCES)
             }
         }
-        animatedComposable(Route.SUBTITLE_PREFERENCES) { SubtitlePreference { onNavigateBack() } }
-        animatedComposable(Route.ABOUT) {
+        settingsComposable(Route.SUBTITLE_PREFERENCES) { SubtitlePreference { onNavigateBack() } }
+        settingsComposable(Route.ABOUT) {
             AboutPage(
                 onNavigateBack = onNavigateBack,
                 onNavigateToCreditsPage = { onNavigateTo(Route.CREDITS) },
@@ -220,37 +223,37 @@ fun NavGraphBuilder.settingsGraph(
                 onNavigateToDonatePage = { onNavigateTo(Route.DONATE) },
             )
         }
-        animatedComposable(Route.DONATE) { SponsorsPage(onNavigateBack) }
-        animatedComposable(Route.CREDITS) { CreditsPage(onNavigateBack) }
-        animatedComposable(Route.AUTO_UPDATE) { UpdatePage(onNavigateBack) }
-        animatedComposable(Route.APPEARANCE) {
+        settingsComposable(Route.DONATE) { SponsorsPage(onNavigateBack) }
+        settingsComposable(Route.CREDITS) { CreditsPage(onNavigateBack) }
+        settingsComposable(Route.AUTO_UPDATE) { UpdatePage(onNavigateBack) }
+        settingsComposable(Route.APPEARANCE) {
             AppearancePreferences(onNavigateBack = onNavigateBack, onNavigateTo = onNavigateTo)
         }
-        animatedComposable(Route.INTERACTION) { InteractionPreferencePage(onBack = onNavigateBack) }
-        animatedComposable(Route.LANGUAGES) { LanguagePage { onNavigateBack() } }
-        animatedComposable(Route.DOWNLOAD_DIRECTORY) {
+        settingsComposable(Route.INTERACTION) { InteractionPreferencePage(onBack = onNavigateBack) }
+        settingsComposable(Route.LANGUAGES) { LanguagePage { onNavigateBack() } }
+        settingsComposable(Route.DOWNLOAD_DIRECTORY) {
             DownloadDirectoryPreferences { onNavigateBack() }
         }
-        animatedComposable(Route.TEMPLATE) {
+        settingsComposable(Route.TEMPLATE) {
             TemplateListPage(onNavigateBack = onNavigateBack) {
                 onNavigateTo(Route.TEMPLATE_EDIT id it)
             }
         }
-        animatedComposable(
+        settingsComposable(
             Route.TEMPLATE_EDIT arg Route.TEMPLATE_ID,
             arguments = listOf(navArgument(Route.TEMPLATE_ID) { type = NavType.IntType }),
         ) {
             TemplateEditPage(onNavigateBack, it.arguments?.getInt(Route.TEMPLATE_ID) ?: -1)
         }
-        animatedComposable(Route.DARK_THEME) { DarkThemePreferences { onNavigateBack() } }
-        animatedComposable(Route.NETWORK_PREFERENCES) {
+        settingsComposable(Route.DARK_THEME) { DarkThemePreferences { onNavigateBack() } }
+        settingsComposable(Route.NETWORK_PREFERENCES) {
             NetworkPreferences(
                 navigateToCookieProfilePage = { onNavigateTo(Route.COOKIE_PROFILE) }
             ) {
                 onNavigateBack()
             }
         }
-        animatedComposable(Route.COOKIE_PROFILE) {
+        settingsComposable(Route.COOKIE_PROFILE) {
             CookieProfilePage(
                 cookiesViewModel = cookiesViewModel,
                 navigateToCookieGeneratorPage = { onNavigateTo(Route.COOKIE_GENERATOR_WEBVIEW) },
@@ -258,7 +261,7 @@ fun NavGraphBuilder.settingsGraph(
                 onNavigateBack()
             }
         }
-        animatedComposable(Route.COOKIE_GENERATOR_WEBVIEW) {
+        settingsComposable(Route.COOKIE_GENERATOR_WEBVIEW) {
             WebViewPage(cookiesViewModel = cookiesViewModel) {
                 onNavigateBack()
                 CookieManager.getInstance().flush()
@@ -278,8 +281,20 @@ fun NavGraphBuilder.settingsGraph(
                 }
             }
         }
-        animatedComposable(Route.TROUBLESHOOTING) {
+        settingsComposable(Route.TROUBLESHOOTING) {
             TroubleShootingPage(onNavigateTo = onNavigateTo, onBack = onNavigateBack)
         }
     }
 }
+
+/** Settings pages are single-column lists: keep them at a readable width on large screens. */
+private fun NavGraphBuilder.settingsComposable(
+    route: String,
+    arguments: List<NamedNavArgument> = emptyList(),
+    content: @Composable (NavBackStackEntry) -> Unit,
+) =
+    animatedComposable(route = route, arguments = arguments) { entry ->
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            Box(modifier = Modifier.widthIn(max = 840.dp)) { content(entry) }
+        }
+    }
