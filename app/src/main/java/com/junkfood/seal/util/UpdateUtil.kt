@@ -103,7 +103,9 @@ object UpdateUtil {
             packageManager.getPackageInfo(packageName, 0).versionName.toVersion()
         }
 
-    private fun Context.getLatestApk() = File(getExternalFilesDir("apk"), "latest.apk")
+    // Internal cache, not external storage, so other apps can't swap the APK before install
+    private fun Context.getLatestApk() =
+        File(cacheDir, "apk").apply { mkdirs() }.resolve("latest.apk")
 
     fun installLatestApk(context: Context = App.context) =
         context.run {

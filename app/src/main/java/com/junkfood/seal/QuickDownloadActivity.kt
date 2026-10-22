@@ -31,6 +31,7 @@ import com.junkfood.seal.ui.page.downloadv2.configure.PlaylistSelectionPage
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.PreferenceUtil
+import com.junkfood.seal.util.getWebUrl
 import com.junkfood.seal.util.matchUrlsFromSharedText
 import com.junkfood.seal.util.setLanguage
 import kotlinx.coroutines.launch
@@ -46,7 +47,7 @@ class QuickDownloadActivity : ComponentActivity() {
 
         return when (intent.action) {
             Intent.ACTION_VIEW -> {
-                intent.dataString?.let {
+                intent.getWebUrl()?.let {
                     listOf(it)
                 }
             }

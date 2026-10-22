@@ -102,7 +102,7 @@ fun WebViewPage(cookiesViewModel: CookiesViewModel, onDismissRequest: () -> Unit
                 },
                 actions = {
                     TextButton(onClick = onDismissRequest) {
-                        Text(text = stringResource(id = R.string.abc_action_mode_done))
+                        Text(text = stringResource(id = android.R.string.ok))
                     }
                 },
             )

@@ -88,6 +88,14 @@ fun matchUrlFromClipboard(string: String, isMatchingMultiLink: Boolean = false):
     }
 }
 
+/**
+ * Returns the intent's data URI only if it is an http(s) URL. Explicit intents bypass the
+ * manifest's scheme filter, and anything else (e.g. "--exec=...") would reach yt-dlp as an option.
+ */
+fun android.content.Intent.getWebUrl(): String? =
+    data?.takeIf { it.scheme?.lowercase() in setOf("http", "https") && !it.host.isNullOrEmpty() }
+        ?.toString()
+
 fun matchUrlsFromSharedText(s: String): List<String> {
     return findURLsFromString(s, false).let {
         if (it.isEmpty()) {
