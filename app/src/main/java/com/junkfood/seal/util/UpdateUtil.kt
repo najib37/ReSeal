@@ -31,7 +31,8 @@ import okhttp3.ResponseBody
 
 object UpdateUtil {
 
-    private const val OWNER = "JunkFood02"
+    // Fork builds are signed with a different key, so updates must come from the fork's releases
+    private const val OWNER = "najib37"
     private const val REPO = "Seal"
     private const val ARM64 = "arm64-v8a"
     private const val ARM32 = "armeabi-v7a"

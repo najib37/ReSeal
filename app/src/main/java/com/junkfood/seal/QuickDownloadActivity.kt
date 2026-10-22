@@ -34,7 +34,6 @@ import com.junkfood.seal.util.PreferenceUtil
 import com.junkfood.seal.util.matchUrlsFromSharedText
 import com.junkfood.seal.util.setLanguage
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.koin.androidx.viewmodel.ext.android.getViewModel
 
 private const val TAG = "QuickDownloadActivity"
@@ -95,7 +94,7 @@ class QuickDownloadActivity : ComponentActivity() {
         }
 
         if (Build.VERSION.SDK_INT < 33) {
-            runBlocking { setLanguage(PreferenceUtil.getLocaleFromPreference()) }
+            setLanguage(PreferenceUtil.getLocaleFromPreference())
         }
 
         val viewModel: DownloadDialogViewModel = getViewModel()

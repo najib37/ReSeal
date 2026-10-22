@@ -217,7 +217,7 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
     }
 
     private var Task.state: Task.State
-        get() = taskStateMap[this]!!
+        get() = checkNotNull(taskStateMap[this]) { "No state for task ${this.id}" }
         set(value) {
             taskStateMap[this] = value
         }
