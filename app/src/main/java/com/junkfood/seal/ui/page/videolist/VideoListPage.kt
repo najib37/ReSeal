@@ -96,13 +96,17 @@ import com.junkfood.seal.ui.component.MediaListItem
 import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.component.SealSearchBar
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.junkfood.seal.download.DownloaderV2
 import com.junkfood.seal.download.Task
 import com.junkfood.seal.ui.component.VideoFilterChip
 import com.junkfood.seal.ui.page.downloadv2.Filter
+import com.junkfood.seal.ui.component.SealModalBottomSheet
 import com.junkfood.seal.ui.page.downloadv2.ListItemStateText
+import com.junkfood.seal.ui.page.downloadv2.SheetContent
+import com.junkfood.seal.ui.page.downloadv2.rememberTaskActionHandler
 import com.junkfood.seal.ui.page.downloadv2.VideoListItem as TaskListItem
 import org.koin.compose.koinInject
 import com.junkfood.seal.ui.svg.DynamicColorImageVectors
@@ -176,6 +180,9 @@ fun VideoListPage(
         derivedStateOf { activeTasks.filter { Filter.Downloading.predict(it) } }
     }
     var statusFilter by rememberSaveable { mutableStateOf(StatusFilter.All) }
+    // Task whose action sheet is open; the sheet is shared with the download queue
+    var selectedTask by remember { mutableStateOf<Task?>(null) }
+    val onTaskAction = rememberTaskActionHandler(downloader)
     val hasContent = fullVideoList.isNotEmpty() || activeTasks.isNotEmpty()
 
     val scrollBehavior =
@@ -548,8 +555,7 @@ fun VideoListPage(
                         if (statusFilter == StatusFilter.Downloading) downloadingTasks
                         else activeTasks,
                     key = { (task, _) -> task.id },
-                ) { (_, state) ->
-                    // "More" opens the queue, where cancel/retry/share live
+                ) { (task, state) ->
                     TaskListItem(
                         modifier =
                             Modifier.padding(horizontal = 16.dp, vertical = 8.dp).animateItem(),
@@ -560,7 +566,10 @@ fun VideoListPage(
                                 downloadState = state.downloadState,
                             )
                         },
-                        onButtonClick = onNavigateBack,
+                        onButtonClick = {
+                            view.slightHapticFeedback()
+                            selectedTask = task
+                        },
                     )
                 }
             }
@@ -608,6 +617,32 @@ fun VideoListPage(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    selectedTask?.let { task ->
+        val taskSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        // The task can disappear (e.g. deleted from the sheet); close the sheet with it
+        val state = taskStateMap[task]
+        if (state == null) {
+            selectedTask = null
+        } else {
+            val dismiss: () -> Unit = {
+                scope.launch { taskSheetState.hide() }.invokeOnCompletion { selectedTask = null }
+            }
+            SealModalBottomSheet(
+                sheetState = taskSheetState,
+                contentPadding = PaddingValues(),
+                onDismissRequest = { selectedTask = null },
+            ) {
+                SheetContent(
+                    task = task,
+                    viewState = state.viewState,
+                    downloadState = state.downloadState,
+                    onDismissRequest = dismiss,
+                    onActionPost = onTaskAction,
+                )
             }
         }
     }
