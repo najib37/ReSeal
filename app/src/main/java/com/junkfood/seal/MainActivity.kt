@@ -59,13 +59,22 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Cold start from a share or link: onNewIntent only covers an already-running activity.
+        // Skipped on recreation (rotation) so the sheet doesn't reopen.
+        if (savedInstanceState == null) handleSharedIntent(intent)
+
         requestNotificationPermissionIfNeeded()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        handleSharedIntent(intent)
+    }
+
+    private fun handleSharedIntent(intent: Intent) {
+        if (intent.action != Intent.ACTION_SEND && intent.action != Intent.ACTION_VIEW) return
         val urls = intent.getSharedURLs()
-        if (urls.isNullOrEmpty()){
+        if (urls.isNullOrEmpty()) {
             Log.e(TAG, getString(R.string.share_fail_msg))
             return
         }
@@ -85,11 +94,7 @@ class MainActivity : AppCompatActivity() {
             Intent.ACTION_SEND -> {
                 intent.getStringExtra(Intent.EXTRA_TEXT)?.let { sharedContent ->
                     intent.removeExtra(Intent.EXTRA_TEXT)
-                    matchUrlsFromSharedText(sharedContent).also { matchedUrls ->
-                        if (sharedUrlCached != matchedUrls) {
-                            sharedUrlCached = matchedUrls
-                        }
-                    }
+                    matchUrlsFromSharedText(sharedContent)
                 }
             }
 
@@ -109,6 +114,5 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        private var sharedUrlCached : List<String>? = null
     }
 }

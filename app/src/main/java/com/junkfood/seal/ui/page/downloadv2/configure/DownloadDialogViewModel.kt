@@ -13,7 +13,9 @@ import com.junkfood.seal.util.VideoInfo
 import com.yausername.youtubedl_android.YoutubeDL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -86,6 +88,10 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
     private val mSheetStateFlow: MutableStateFlow<SheetState> =
         MutableStateFlow(SheetState.InputUrl)
     private val mSheetValueFlow: MutableStateFlow<SheetValue> = MutableStateFlow(SheetValue.Hidden)
+
+    // One-shot: shared links were queued without a sheet, so the UI should show the queue
+    private val mTaskQueuedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val taskQueuedFlow = mTaskQueuedFlow.asSharedFlow()
 
     val selectionStateFlow = mSelectionStateFlow.asStateFlow()
     val sheetStateFlow = mSheetStateFlow.asStateFlow()
@@ -219,7 +225,10 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
         val urlList = action.urlList
         if (!urlList.isNullOrEmpty() && !CONFIGURE.getBoolean()) {
             // "Configure before download" is off: queue shared links with the saved preferences
+            // and let the UI bring the download queue into view (no sheet to expand)
             downloadWithPreset(urlList, DownloadUtil.DownloadPreferences.createFromPreferences())
+            mTaskQueuedFlow.tryEmit(Unit)
+            return
         } else if (!urlList.isNullOrEmpty()) {
             mSheetStateFlow.update { SheetState.Configure(urlList) }
         } else {

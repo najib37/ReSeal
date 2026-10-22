@@ -111,6 +111,15 @@ fun AppEntry(dialogViewModel: DownloadDialogViewModel) {
         }
     }
 
+    // A share queued straight away (configure sheet off): show the queue with the new task
+    LaunchedEffect(Unit) {
+        dialogViewModel.taskQueuedFlow.collect {
+            if (navController.currentDestination?.route != Route.HOME) {
+                navController.popBackStack(route = Route.HOME, inclusive = false, saveState = true)
+            }
+        }
+    }
+
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     var currentTopDestination by rememberSaveable { mutableStateOf(currentRoute) }
 
