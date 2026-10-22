@@ -35,7 +35,13 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
+import com.junkfood.seal.ui.common.LocalFixedColorRoles
+import com.junkfood.seal.ui.component.ActionSheetPrimaryButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SuggestionChip
@@ -139,17 +145,26 @@ private fun InputUrlPageImpl(
     var showPasteDialog by remember { mutableStateOf(false) }
     var showSavedUrlDialog by remember { mutableStateOf(false) }
 
+    val fixedColors = LocalFixedColorRoles.current
+    val addToSavedLinks by remember {
+        derivedStateOf { url.isNotBlank() && !savedLinks.contains(url) }
+    }
+
+    // Laid out like the task options sheet: left-aligned title, then a row of tonal action
+    // buttons, then full-width actions
     Column(modifier = modifier) {
-        Header(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-            title = stringResource(R.string.new_task),
-            icon = Icons.Outlined.Add,
+        Text(
+            text = stringResource(R.string.new_task),
+            style = MaterialTheme.typography.headlineSmallEmphasized,
+            modifier = Modifier.padding(horizontal = 24.dp),
         )
         OutlinedTextField(
             value = url,
             onValueChange = { url = it },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp).padding(horizontal = 32.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp).padding(horizontal = 24.dp),
             label = { Text(stringResource(R.string.video_url)) },
+            leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
+            shape = MaterialTheme.shapes.large,
             maxLines = 3,
             trailingIcon = {
                 if (url.isNotEmpty()) {
@@ -159,105 +174,80 @@ private fun InputUrlPageImpl(
         )
 
         LazyRow(
-            modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 32.dp),
+            modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
         ) {
             if (urlListFromClipboard.isNotEmpty()) {
                 item(key = "paste url") {
-                    SuggestionChip(
+                    ActionSheetPrimaryButton(
                         modifier = Modifier.animateItem(),
+                        containerColor = fixedColors.primaryFixed,
+                        contentColor = fixedColors.onPrimaryFixedVariant,
+                        imageVector = Icons.Outlined.ContentPaste,
+                        text = stringResource(R.string.paste_msg),
                         onClick = { url = urlListFromClipboard.first() },
-                        label = { Text(stringResource(R.string.paste_msg)) },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Outlined.ContentPaste,
-                                contentDescription = null,
-                                modifier = Modifier.size(SuggestionChipDefaults.IconSize),
-                            )
-                        },
                     )
                 }
             }
 
             if (urlListFromClipboard.size > 1) {
                 item(key = "paste multiple url") {
-                    SuggestionChip(
+                    ActionSheetPrimaryButton(
                         modifier = Modifier.animateItem(),
+                        containerColor = fixedColors.secondaryFixed,
+                        contentColor = fixedColors.onSecondaryFixedVariant,
+                        imageVector = Icons.Outlined.ContentPasteGo,
+                        text =
+                            stringResource(R.string.select_multiple_link, urlListFromClipboard.size),
                         onClick = { showPasteDialog = true },
-                        label = {
-                            Text(
-                                stringResource(
-                                    R.string.select_multiple_link,
-                                    urlListFromClipboard.size,
-                                )
-                            )
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Outlined.ContentPasteGo,
-                                contentDescription = null,
-                                modifier = Modifier.size(SuggestionChipDefaults.IconSize),
-                            )
-                        },
                     )
                 }
             }
 
-            item(key = "saved urls") {
-                val addToSavedLinks by remember {
-                    derivedStateOf { url.isNotBlank() && !savedLinks.contains(url) }
-                }
-                if (addToSavedLinks || savedLinks.isNotEmpty()) {
-                    SuggestionChip(
+            if (addToSavedLinks || savedLinks.isNotEmpty()) {
+                item(key = "saved urls") {
+                    ActionSheetPrimaryButton(
                         modifier = Modifier.animateItem(),
+                        containerColor = fixedColors.tertiaryFixed,
+                        contentColor = fixedColors.onTertiaryFixedVariant,
+                        imageVector = Icons.Outlined.AddLink,
+                        text =
+                            if (addToSavedLinks)
+                                stringResource(R.string.add_to, stringResource(R.string.saved_urls))
+                            else stringResource(R.string.saved_urls),
                         onClick = {
-                            if (addToSavedLinks) onSaveLink(url)
-                            else {
-                                showSavedUrlDialog = true
-                            }
-                        },
-                        label = {
-                            Row(modifier = Modifier.animateContentSize()) {
-                                if (addToSavedLinks) {
-                                    Text(
-                                        stringResource(
-                                            R.string.add_to,
-                                            stringResource(R.string.saved_urls),
-                                        )
-                                    )
-                                } else {
-                                    Text(stringResource(R.string.saved_urls))
-                                }
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Outlined.AddLink,
-                                contentDescription = null,
-                                modifier = Modifier.size(SuggestionChipDefaults.IconSize),
-                            )
+                            if (addToSavedLinks) onSaveLink(url) else showSavedUrlDialog = true
                         },
                     )
                 }
             }
         }
 
+        // Expressive buttons: shapes morph on press; Continue needs a link first
         Row(
-            modifier =
-                Modifier.align(Alignment.End).padding(top = 24.dp).padding(horizontal = 32.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 24.dp).padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            OutlinedButtonWithIcon(
-                modifier = Modifier.padding(horizontal = 12.dp),
+            OutlinedButton(
                 onClick = { onActionPost(Action.HideSheet) },
-                icon = Icons.Outlined.Cancel,
-                text = stringResource(R.string.cancel),
-            )
-            FilledButtonWithIcon(
-                icon = Icons.AutoMirrored.Outlined.ArrowForward,
-                text = stringResource(R.string.proceed),
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp),
             ) {
-                onActionPost(Action.ProceedWithURLs(listOf(url)))
+                Text(stringResource(R.string.cancel))
+            }
+            Button(
+                onClick = { onActionPost(Action.ProceedWithURLs(listOf(url))) },
+                enabled = url.isNotBlank(),
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                )
+                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                Text(stringResource(R.string.proceed))
             }
         }
     }
