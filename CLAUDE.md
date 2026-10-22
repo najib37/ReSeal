@@ -7,8 +7,7 @@ Seal is an Android video/audio downloader (Jetpack Compose, Material 3 Expressiv
 
 ## Commands
 
-The dev machine is low-spec: run **one Gradle build at a time** (check for a running build first if another
-session may be active). `gradle.properties` already compiles Kotlin in-process with 2 workers; don't undo that.
+`gradle.properties` compiles Kotlin in-process with 2 workers; don't undo that.
 
 ```bash
 ./gradlew assembleGenericDebug                    # debug APKs -> app/build/outputs/apk/generic/debug/
@@ -22,10 +21,8 @@ adb install -r app/build/outputs/apk/generic/debug/Seal-*-generic-arm64-v8a-debu
   `com.junkfood.seal.debug`, so they install next to the official app.
 - APK ABIs come from `ABI_FILTERS` in `gradle.properties`; release signing reads `keystore.properties` if present.
 - Unit tests exist only for pure helpers (output templates, URL/filename/cookie parsing). UI work is verified on a
-  device: install, drive with `adb shell input` / `uiautomator dump`, take `screencap` screenshots. Before any tap or
-  screenshot, confirm Seal is the focused window (`dumpsys window | rg mCurrentFocus`); the phone is the user's own.
-  Don't install while `DownloadService` is running (`dumpsys activity services com.junkfood.seal.debug`); it kills
-  active downloads.
+  device: install, drive with `adb shell input` / `uiautomator dump`, take `screencap` screenshots. Installing while
+  `DownloadService` is running (`dumpsys activity services com.junkfood.seal.debug`) kills active downloads.
 
 ## Version constraints (don't "upgrade" past these without a migration)
 
@@ -78,9 +75,5 @@ snapshot passed into each task.
 
 ## Workflow in this repo
 
-- Several Claude sessions may work here at once. Do UI/feature work in a git worktree (e.g. `../Seal-ui`) and
-  coordinate builds with other sessions.
 - Branches follow upstream naming (`feat/…`, `fix/…`, `build/…`, `perf/…`); changes land via `gh pr create` +
   `gh pr merge --merge` against `najib37/ReSeal`.
-- SSH to GitHub (port 22 and ssh.github.com:443) is blocked here; push over HTTPS with gh credentials:
-  `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push https://github.com/najib37/ReSeal.git <branch>`.
