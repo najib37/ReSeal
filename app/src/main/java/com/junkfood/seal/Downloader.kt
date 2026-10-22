@@ -1,6 +1,7 @@
 package com.junkfood.seal
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 
 /** Singleton Downloader for state holder & perform downloads, used by `Activity` & `Service` */
 object Downloader {
@@ -113,6 +115,13 @@ object Downloader {
 
         fun onCopyLog(clipboardManager: ClipboardManager) {
             clipboardManager.setText(AnnotatedString(output))
+        }
+
+        fun onShareLogAsFile(activityContext: Context) {
+            val tempFile = File.createTempFile("seal_log_", ".txt", activityContext.cacheDir)
+            tempFile.writeText(output)
+            val shareIntent = FileUtil.createIntentForSharingFile(tempFile, "text/plain")
+            activityContext.startActivity(Intent.createChooser(shareIntent, "Share log as file via"))
         }
 
         fun onRestart() {
