@@ -27,7 +27,6 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -60,9 +59,11 @@ import com.junkfood.seal.ui.common.LocalPaletteStyleIndex
 import com.junkfood.seal.ui.common.LocalSeedColor
 import com.junkfood.seal.ui.common.Route
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceDefaults
 import com.junkfood.seal.ui.component.PreferenceItem
 import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.page.downloadv2.ActionButton
 import com.junkfood.seal.ui.page.downloadv2.CardStateIndicator
 import com.junkfood.seal.ui.page.downloadv2.VideoCardV2
@@ -106,7 +107,7 @@ fun AppearancePreferences(onNavigateBack: () -> Unit, onNavigateTo: (String) -> 
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(modifier = Modifier, text = stringResource(id = R.string.look_and_feel))
                 },
@@ -118,7 +119,12 @@ fun AppearancePreferences(onNavigateBack: () -> Unit, onNavigateTo: (String) -> 
             Column(Modifier.verticalScroll(rememberScrollState()).padding(it)) {
                 val downloadState = Task.DownloadState.Running(Job(), "", 0.8f)
                 VideoCardV2(
-                    modifier = Modifier.padding(18.dp).clearAndSetSemantics {},
+                    modifier =
+                        Modifier.padding(
+                                horizontal = PreferenceDefaults.ScreenPadding,
+                                vertical = 12.dp,
+                            )
+                            .clearAndSetSemantics {},
                     title = stringResource(R.string.video_title_sample_text),
                     uploader = stringResource(R.string.video_creator_sample_text),
                     thumbnailModel = image,

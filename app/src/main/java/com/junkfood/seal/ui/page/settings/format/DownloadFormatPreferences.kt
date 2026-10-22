@@ -19,7 +19,6 @@ import androidx.compose.material.icons.outlined.VideoSettings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -44,6 +43,7 @@ import com.junkfood.seal.ui.component.PreferenceItem
 import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.AUDIO_CONVERSION_FORMAT
 import com.junkfood.seal.util.AUDIO_CONVERT
 import com.junkfood.seal.util.CROP_ARTWORK
@@ -115,7 +115,7 @@ fun DownloadFormatPreferences(onNavigateBack: () -> Unit, navigateToSubtitlePage
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.format)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 scrollBehavior = scrollBehavior,

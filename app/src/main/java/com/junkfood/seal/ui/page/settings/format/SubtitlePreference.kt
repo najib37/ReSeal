@@ -13,7 +13,6 @@ import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -37,6 +36,7 @@ import com.junkfood.seal.ui.component.PreferenceInfo
 import com.junkfood.seal.ui.component.PreferenceItem
 import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithContainer
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.AUTO_SUBTITLE
 import com.junkfood.seal.util.AUTO_TRANSLATED_SUBTITLES
 import com.junkfood.seal.util.EMBED_SUBTITLE
@@ -97,7 +97,7 @@ fun SubtitlePreference(onNavigateBack: () -> Unit) {
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(modifier = Modifier, text = stringResource(id = R.string.subtitle))
                 },

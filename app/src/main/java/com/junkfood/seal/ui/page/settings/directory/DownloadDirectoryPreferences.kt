@@ -39,7 +39,6 @@ import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -91,6 +90,7 @@ import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
 import com.junkfood.seal.ui.component.PreferencesHintCard
 import com.junkfood.seal.ui.component.SealDialog
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.COMMAND_DIRECTORY
 import com.junkfood.seal.util.CUSTOM_COMMAND
 import com.junkfood.seal.util.CUSTOM_OUTPUT_TEMPLATE
@@ -235,7 +235,7 @@ fun DownloadDirectoryPreferences(onNavigateBack: () -> Unit) {
             SnackbarHost(modifier = Modifier.systemBarsPadding(), hostState = snackbarHostState)
         },
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(
                         modifier = Modifier,

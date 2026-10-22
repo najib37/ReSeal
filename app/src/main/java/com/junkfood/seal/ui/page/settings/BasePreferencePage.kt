@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
@@ -16,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +37,7 @@ fun BasePreferencePage(
     val topBar =
         topBar
             ?: {
-                LargeTopAppBar(
+                SealLargeTopAppBar(
                     title = { Text(text = title) },
                     scrollBehavior = scrollBehavior,
                     navigationIcon = { BackButton(onClick = onBack) },

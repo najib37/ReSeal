@@ -253,6 +253,8 @@
     <string name="clear">Clear</string>
     <string name="clear_completed_tasks">Clear completed</string>
     <string name="clear_failed_tasks">Clear failed and canceled</string>
+    <string name="no_running_tasks">No running tasks</string>
+    <string name="no_running_tasks_hint">Tap + to run a yt-dlp command with a custom template</string>
     <string name="switch_to_list_view">Switch to list view</string>
     <string name="switch_to_grid_view">Switch to grid view</string>
     <string name="edit_shortcuts">Edit shortcuts</string>

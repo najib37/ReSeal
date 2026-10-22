@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForwardIos
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -48,6 +47,7 @@ import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.PreferenceSingleChoiceItem
 import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferencesHintCard
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.page.settings.about.weblate
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.util.LocaleLanguageCodeMap
@@ -155,7 +155,7 @@ private fun LanguagePageImpl(
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = {
                     Text(modifier = Modifier, text = stringResource(id = R.string.language))
                 },

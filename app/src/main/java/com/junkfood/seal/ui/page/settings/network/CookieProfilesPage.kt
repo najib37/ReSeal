@@ -40,7 +40,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -86,6 +85,7 @@ import com.junkfood.seal.ui.component.PasteFromClipBoardButton
 import com.junkfood.seal.ui.component.PreferenceItemVariant
 import com.junkfood.seal.ui.component.PreferenceSwitchWithContainer
 import com.junkfood.seal.ui.component.SealDialog
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.component.TextButtonWithIcon
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.ui.theme.generateLabelColor
@@ -195,7 +195,7 @@ fun CookieProfilePage(
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.cookies)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 actions = {

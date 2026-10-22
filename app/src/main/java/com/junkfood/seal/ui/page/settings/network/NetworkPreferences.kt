@@ -12,7 +12,6 @@ import androidx.compose.material.icons.outlined.SignalCellularConnectedNoInterne
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -33,6 +32,7 @@ import com.junkfood.seal.ui.component.PreferenceItem
 import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.ARIA2C
 import com.junkfood.seal.util.CELLULAR_DOWNLOAD
 import com.junkfood.seal.util.COOKIES
@@ -64,7 +64,7 @@ fun NetworkPreferences(navigateToCookieProfilePage: () -> Unit = {}, onNavigateB
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.network)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 scrollBehavior = scrollBehavior,

@@ -15,7 +15,6 @@ import androidx.compose.material.icons.outlined.VolunteerActivism
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,6 +49,7 @@ import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.ConfirmButton
 import com.junkfood.seal.ui.component.PreferenceItem
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.AUTO_UPDATE
 import com.junkfood.seal.util.PreferenceUtil
 import com.junkfood.seal.util.ToastUtil
@@ -102,7 +102,7 @@ fun AboutPage(
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(modifier = Modifier, text = stringResource(id = R.string.about)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 scrollBehavior = scrollBehavior,

@@ -38,7 +38,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -71,7 +70,9 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.junkfood.seal.App
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.booleanState
+import androidx.compose.material3.LoadingIndicator
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceDefaults
 import com.junkfood.seal.ui.component.ConfirmButton
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.PreferenceInfo
@@ -80,6 +81,7 @@ import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
 import com.junkfood.seal.ui.component.SealDialog
+import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.page.download.NotificationPermissionDialog
 import com.junkfood.seal.util.CONFIGURE
 import com.junkfood.seal.util.CUSTOM_COMMAND
@@ -158,7 +160,7 @@ fun GeneralDownloadPreferences(onNavigateBack: () -> Unit, navigateToTemplate: (
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            SealLargeTopAppBar(
                 title = { Text(text = stringResource(id = R.string.general_settings)) },
                 navigationIcon = { BackButton { onNavigateBack() } },
                 scrollBehavior = scrollBehavior,
@@ -193,9 +195,7 @@ fun GeneralDownloadPreferences(onNavigateBack: () -> Unit, navigateToTemplate: (
                                 Icon(
                                     imageVector = Icons.Outlined.Update,
                                     contentDescription = null,
-                                    modifier =
-                                        Modifier.padding(start = 8.dp, end = 16.dp).size(24.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(PreferenceDefaults.IconSize),
                                 )
                             }
                         },
@@ -492,9 +492,7 @@ fun DialogCheckBoxItem(
 
 @Composable
 private fun UpdateProgressIndicator() {
-    CircularProgressIndicator(
-        modifier = Modifier.padding(start = 8.dp, end = 16.dp).size(24.dp).padding(2.dp)
-    )
+    LoadingIndicator(modifier = Modifier.size(PreferenceDefaults.IconContainerSize))
 }
 
 @Composable
