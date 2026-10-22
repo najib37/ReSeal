@@ -193,29 +193,14 @@ sealed interface UiAction {
     data class CopyErrorReport(val throwable: Throwable) : UiAction
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Handles the task action sheet's actions; shared by the queue and the Downloads page. */
 @Composable
-fun DownloadPageV2(
-    modifier: Modifier = Modifier,
-    onMenuOpen: (() -> Unit) = {},
-    dialogViewModel: DownloadDialogViewModel,
-    downloader: DownloaderV2 = koinInject(),
-) {
+fun rememberTaskActionHandler(downloader: DownloaderV2): (Task, UiAction) -> Unit {
     val view = LocalView.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     val uriHandler = LocalUriHandler.current
-
-    DownloadPageImplV2(
-        modifier = modifier,
-        taskDownloadStateMap = downloader.getTaskStateMap(),
-        downloadCallback = {
-            view.slightHapticFeedback()
-            dialogViewModel.postAction(Action.ShowSheet())
-        },
-        onMenuOpen = onMenuOpen,
-    ) { task, action ->
+    return { task, action ->
         view.slightHapticFeedback()
         when (action) {
             UiAction.Cancel -> downloader.cancel(task)
@@ -236,12 +221,8 @@ fun DownloadPageV2(
                     FileUtil.openFile(path = it) { context.makeToast(R.string.file_unavailable) }
                 }
             }
-            is UiAction.OpenThumbnailURL -> {
-                uriHandler.openUri(action.url)
-            }
-            is UiAction.OpenVideoURL -> {
-                uriHandler.openUri(action.url)
-            }
+            is UiAction.OpenThumbnailURL -> uriHandler.openUri(action.url)
+            is UiAction.OpenVideoURL -> uriHandler.openUri(action.url)
             is UiAction.ShareFile -> {
                 val shareTitle = context.getString(R.string.share)
                 FileUtil.createIntentForSharingFile(action.filePath)?.let {
@@ -250,6 +231,28 @@ fun DownloadPageV2(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DownloadPageV2(
+    modifier: Modifier = Modifier,
+    onMenuOpen: (() -> Unit) = {},
+    dialogViewModel: DownloadDialogViewModel,
+    downloader: DownloaderV2 = koinInject(),
+) {
+    val view = LocalView.current
+
+    DownloadPageImplV2(
+        modifier = modifier,
+        taskDownloadStateMap = downloader.getTaskStateMap(),
+        downloadCallback = {
+            view.slightHapticFeedback()
+            dialogViewModel.postAction(Action.ShowSheet())
+        },
+        onMenuOpen = onMenuOpen,
+        onActionPost = rememberTaskActionHandler(downloader),
+    )
 
     var preferences by remember {
         mutableStateOf(DownloadUtil.DownloadPreferences.createFromPreferences())
