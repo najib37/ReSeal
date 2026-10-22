@@ -3,6 +3,7 @@ package com.junkfood.seal.download
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshotFlow
@@ -44,6 +45,9 @@ import org.koin.core.component.KoinComponent
 private const val TAG = "DownloaderV2"
 
 private const val MAX_CONCURRENCY = 3
+
+// Safety net so a stuck task can't drain the battery indefinitely
+private const val WAKE_LOCK_TIMEOUT_MS = 2 * 60 * 60 * 1000L
 
 interface DownloaderV2 {
     fun getTaskStateMap(): SnapshotStateMap<Task, Task.State>
@@ -107,7 +111,15 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                 .onEach { doYourWork() }
                 .map { it.countRunning() }
                 .distinctUntilChanged()
-                .collect { if (it > 0) App.startService() else App.stopService() }
+                .collect {
+                    if (it > 0) {
+                        App.startService()
+                        acquireWakeLock()
+                    } else {
+                        App.stopService()
+                        releaseWakeLock()
+                    }
+                }
         }
 
         scope.launch(Dispatchers.IO) {
@@ -132,8 +144,8 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                     val preState = state.downloadState
                     val downloadState =
                         when (preState) {
-                            is FetchingInfo,
-                            Idle -> {
+                            // Idle tasks have no job yet, so they stay queued
+                            is FetchingInfo -> {
                                 Canceled(action = FetchInfo)
                             }
                             is Running -> {
@@ -151,6 +163,21 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                 }
         taskList.forEach(::enqueue)
     }
+
+    // Keeps the CPU awake while tasks run so Doze doesn't freeze yt-dlp mid-download
+    private val wakeLock: PowerManager.WakeLock by lazy {
+        (appContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Seal:Download")
+            .apply { setReferenceCounted(false) }
+    }
+
+    private fun acquireWakeLock() =
+        runCatching { if (!wakeLock.isHeld) wakeLock.acquire(WAKE_LOCK_TIMEOUT_MS) }
+            .onFailure { Log.w(TAG, "acquireWakeLock", it) }
+
+    private fun releaseWakeLock() =
+        runCatching { if (wakeLock.isHeld) wakeLock.release() }
+            .onFailure { Log.w(TAG, "releaseWakeLock", it) }
 
     private fun Map<Task, Task.State>.countRunning(): Int = count { (_, state) ->
         state.downloadState is Running || state.downloadState is FetchingInfo
@@ -222,24 +249,25 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
             taskStateMap[this] = value
         }
 
+    // Setters ignore tasks removed while their download is still reporting progress
     private var Task.downloadState: DownloadState
         get() = state.downloadState
         set(value) {
-            val prevState = state
+            val prevState = taskStateMap[this] ?: return
             taskStateMap[this] = prevState.copy(downloadState = value)
         }
 
     private var Task.info: VideoInfo?
         get() = state.videoInfo
         set(value) {
-            val prevState = state
+            val prevState = taskStateMap[this] ?: return
             taskStateMap[this] = prevState.copy(videoInfo = value)
         }
 
     private var Task.viewState: Task.ViewState
         get() = state.viewState
         set(value) {
-            val prevState = state
+            val prevState = taskStateMap[this] ?: return
             taskStateMap[this] = prevState.copy(viewState = value)
         }
 
@@ -282,9 +310,8 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                 when (state.downloadState) {
                     Idle -> task.prepare()
                     ReadyWithInfo -> task.download()
-                    else -> {
-                        throw IllegalStateException()
-                    }
+                    // State changed concurrently; the next snapshot picks it up again
+                    else -> {}
                 }
             }
     }
@@ -460,7 +487,7 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
     }
 
     private fun Task.restartImpl() {
-        when (val preState = downloadState) {
+        when (val preState = taskStateMap[this]?.downloadState) {
             is DownloadState.Restartable -> {
                 downloadState =
                     when (preState.action) {
@@ -468,9 +495,8 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                         FetchInfo -> Idle
                     }
             }
-            else -> {
-                throw IllegalStateException()
-            }
+            // Removed or already restarted (e.g. a double tap on Retry)
+            else -> Log.w(TAG, "restart ignored for task $id in state $preState")
         }
     }
 

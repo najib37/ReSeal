@@ -75,9 +75,8 @@ class QuickDownloadActivity : ComponentActivity() {
         if (sharedUrlsCached.isNullOrEmpty()) {
             Log.e(TAG, getString(R.string.share_fail_msg))
             finish()
+            return
         }
-
-        App.startService()
 
         enableEdgeToEdge()
 

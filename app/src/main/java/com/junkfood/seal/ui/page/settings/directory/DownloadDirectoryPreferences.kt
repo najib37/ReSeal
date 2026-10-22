@@ -201,24 +201,22 @@ fun DownloadDirectoryPreferences(onNavigateBack: () -> Unit) {
         ) {
             it?.let { uri ->
                 App.updateDownloadDir(uri, editingDirectory)
-                if (editingDirectory != Directory.SDCARD) {
-                    val path = FileUtil.getRealPath(uri)
-                    when (editingDirectory) {
-                        Directory.AUDIO -> {
-                            audioDirectoryText = path
-                        }
+                // The SD card keeps its content:// URI; only the others resolve to a file path
+                when (editingDirectory) {
+                    Directory.AUDIO -> {
+                        audioDirectoryText = FileUtil.getRealPath(uri)
+                    }
 
-                        Directory.VIDEO -> {
-                            videoDirectoryText = path
-                        }
+                    Directory.VIDEO -> {
+                        videoDirectoryText = FileUtil.getRealPath(uri)
+                    }
 
-                        Directory.SDCARD -> {
-                            sdcardUri = uri.toString()
-                        }
+                    Directory.SDCARD -> {
+                        sdcardUri = uri.toString()
+                    }
 
-                        Directory.CUSTOM_COMMAND -> {
-                            customCommandDirectory = path
-                        }
+                    Directory.CUSTOM_COMMAND -> {
+                        customCommandDirectory = FileUtil.getRealPath(uri)
                     }
                 }
             }

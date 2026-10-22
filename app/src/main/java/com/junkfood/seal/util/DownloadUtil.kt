@@ -823,7 +823,8 @@ object DownloadUtil {
                         addOption("--concurrent-fragments", concurrentFragments)
                     }
 
-                    if (extractAudio || (videoInfo.vcodec == "none")) {
+                    // With explicit formats, TaskFactory already decided via extractAudio
+                    if (extractAudio || (formatIdString.isEmpty() && videoInfo.vcodec == "none")) {
                         if (privateDirectory) pathBuilder.append(App.privateDownloadDir)
                         else pathBuilder.append(audioDownloadDir)
                         addOptionsForAudioDownloads(

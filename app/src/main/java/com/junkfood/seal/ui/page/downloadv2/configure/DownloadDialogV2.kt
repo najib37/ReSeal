@@ -1,5 +1,6 @@
 package com.junkfood.seal.ui.page.downloadv2.configure
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -286,7 +287,8 @@ private fun ErrorPage(modifier: Modifier = Modifier, state: Error, onActionPost:
                 is Action.FetchFormats -> url
                 is Action.FetchPlaylist -> url
                 else -> {
-                    throw IllegalArgumentException()
+                    Log.w("DownloadDialogV2", "ErrorPage: unexpected action $this")
+                    ""
                 }
             }
         }
@@ -461,15 +463,19 @@ fun FormatPage(
 
     LaunchedEffect(state) { sheetState.show() }
     val scope = rememberCoroutineScope()
-    BackHandler { scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() } }
+    val onBack: () -> Unit = {
+        scope.launch {
+            sheetState.hide()
+            onDismissRequest()
+        }
+    }
+    BackHandler(onBack = onBack)
 
     SlideUpPage(state = sheetState) {
         FormatPage(
             modifier = modifier,
             videoInfo = state.info,
-            onNavigateBack = {
-                scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() }
-            },
+            onNavigateBack = onBack,
         )
     }
 }

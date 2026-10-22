@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.junkfood.seal.database.objects.CommandTemplate
 import com.junkfood.seal.download.DownloaderV2
 import com.junkfood.seal.download.Task
+import com.junkfood.seal.util.CONFIGURE
 import com.junkfood.seal.util.DownloadUtil
+import com.junkfood.seal.util.PreferenceUtil.getBoolean
 import com.junkfood.seal.util.PlaylistResult
 import com.junkfood.seal.util.VideoInfo
 import com.yausername.youtubedl_android.YoutubeDL
@@ -136,11 +138,17 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
                                     }
                                 }
                             }
+                            // Leave Loading first, or hideDialog() cancels this very job
+                            mSheetStateFlow.update { SheetState.InputUrl }
                             hideDialog()
                         }
                     }
                     .onFailure { th ->
-                        mSheetStateFlow.update { SheetState.Error(action = action, throwable = th) }
+                        withContext(Dispatchers.Main) {
+                            mSheetStateFlow.update {
+                                SheetState.Error(action = action, throwable = th)
+                            }
+                        }
                     }
             }
         mSheetStateFlow.update { SheetState.Loading(taskKey = "FetchPlaylist_$url", job = job) }
@@ -209,7 +217,10 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
 
     private fun showDialog(action: Action.ShowSheet) {
         val urlList = action.urlList
-        if (!urlList.isNullOrEmpty()) {
+        if (!urlList.isNullOrEmpty() && !CONFIGURE.getBoolean()) {
+            // "Configure before download" is off: queue shared links with the saved preferences
+            downloadWithPreset(urlList, DownloadUtil.DownloadPreferences.createFromPreferences())
+        } else if (!urlList.isNullOrEmpty()) {
             mSheetStateFlow.update { SheetState.Configure(urlList) }
         } else {
             mSheetStateFlow.update { SheetState.InputUrl }

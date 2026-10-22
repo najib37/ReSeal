@@ -96,10 +96,14 @@ fun PlaylistSelectionPage(
 
     val sheetState = rememberSlideUpPageState()
 
-    LaunchedEffect(state) { sheetState.show() }
+    // Keyed on Unit: an identical PlaylistSelection (same playlist fetched twice) wouldn't relaunch
+    LaunchedEffect(Unit) { sheetState.show() }
     val scope = rememberCoroutineScope()
     val onBack: () -> Unit = {
-        scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() }
+        scope.launch {
+            sheetState.hide()
+            onDismissRequest()
+        }
     }
 
     BackHandler(onBack = onBack)
@@ -267,7 +271,8 @@ fun PlaylistSelectionPageImpl(
                                         result.originalUrl ?: result.webpageUrl.toString(),
                                     indexList = selectedItems,
                                     playlistResult = result,
-                                    preferences = DownloadUtil.DownloadPreferences.EMPTY,
+                                    preferences =
+                                        DownloadUtil.DownloadPreferences.createFromPreferences(),
                                 )
                             )
                         },
