@@ -37,7 +37,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import com.junkfood.seal.util.DownloadUtil
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import com.junkfood.seal.ui.common.LocalFixedColorRoles
@@ -82,6 +86,18 @@ import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.Action
 import com.junkfood.seal.ui.theme.ErrorTonalPalettes
 import com.junkfood.seal.util.findURLsFromString
+
+private val FAST_HEIGHTS = listOf(1080, 720, 480)
+
+/** Saved preferences with a resolution-first sort; `null` height means audio only (M4A). */
+private fun fastDownloadPreferences(height: Int?) =
+    DownloadUtil.DownloadPreferences.createFromPreferences().copy(
+        extractAudio = height == null,
+        formatIdString = "",
+        formatSorting = true,
+        sortingFields =
+            if (height != null) "res:$height,ext:mp4:m4a,vcodec:h264" else "ext:m4a,abr",
+    )
 
 @Composable
 fun InputUrlPage(
@@ -219,6 +235,40 @@ private fun InputUrlPageImpl(
                             if (addToSavedLinks) onSaveLink(url) else showSavedUrlDialog = true
                         },
                     )
+                }
+            }
+        }
+
+        // Fast download: skips the configure/format steps. yt-dlp sorts by resolution first, so it
+        // takes the best format at or below the chosen height (falling back to the next lower one)
+        // and prefers MP4/M4A + H.264; the task's probe is reused for the download.
+        Text(
+            text = stringResource(R.string.fast_download),
+            style = MaterialTheme.typography.labelLargeEmphasized,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp),
+        )
+        Row(
+            modifier =
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(
+                    horizontal = 24.dp
+                ),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            (FAST_HEIGHTS.map { it } + listOf(null)).forEach { height ->
+                FilledTonalButton(
+                    onClick = {
+                        onActionPost(
+                            Action.DownloadWithPreset(
+                                urlList = listOf(url),
+                                preferences = fastDownloadPreferences(height),
+                            )
+                        )
+                    },
+                    enabled = url.isNotBlank(),
+                    shapes = ButtonDefaults.shapes(),
+                ) {
+                    Text(if (height != null) "${height}p" else stringResource(R.string.audio))
                 }
             }
         }

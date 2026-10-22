@@ -253,6 +253,7 @@
     <string name="clear">Clear</string>
     <string name="clear_completed_tasks">Clear completed</string>
     <string name="clear_failed_tasks">Clear failed and canceled</string>
+    <string name="fast_download">Fast download</string>
     <string name="simple">Simple</string>
     <string name="advanced">Advanced</string>
     <string name="no_running_tasks">No running tasks</string>
