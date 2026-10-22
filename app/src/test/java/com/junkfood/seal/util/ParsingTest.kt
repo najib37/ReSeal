@@ -56,7 +56,7 @@ class ParsingTest {
                 )
                 .joinToString("\r\n")
 
-        val cookies = DownloadUtil.parseNetscapeCookies(content)
+        val cookies = CookieUtil.parseNetscapeCookies(content)
 
         assertEquals(listOf("SID", "HSID", "empty"), cookies.map { it.name })
         assertEquals("abc", cookies[0].value)

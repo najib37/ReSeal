@@ -24,8 +24,8 @@ import com.junkfood.seal.ui.page.settings.network.CookiesViewModel
 import com.junkfood.seal.ui.page.videolist.VideoListViewModel
 import com.junkfood.seal.util.AUDIO_DIRECTORY
 import com.junkfood.seal.util.COMMAND_DIRECTORY
+import com.junkfood.seal.util.CookieUtil
 import com.junkfood.seal.util.DatabaseUtil
-import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.FileUtil
 import com.junkfood.seal.util.FileUtil.createEmptyFile
 import com.junkfood.seal.util.FileUtil.getCookiesFile
@@ -131,7 +131,7 @@ class App : Application() {
         val profiles = DatabaseUtil.getCookieProfileList()
         val legacyProfiles = profiles.filter { it.content.isBlank() }
         if (legacyProfiles.isEmpty()) return
-        DownloadUtil.extractCookiesFromWebView().onSuccess { content ->
+        CookieUtil.extractCookiesFromWebView().onSuccess { content ->
             legacyProfiles.forEach { profile ->
                 DatabaseUtil.updateCookieProfile(profile.copy(content = content))
             }
@@ -139,7 +139,7 @@ class App : Application() {
     }
 
     private suspend fun writeCookiesFile() {
-        DownloadUtil.getCookiesContentFromDatabase().getOrNull()?.let {
+        CookieUtil.getCookiesContentFromDatabase().getOrNull()?.let {
             FileUtil.writeContentToFile(it, getCookiesFile())
         } ?: getCookiesFile().delete()
     }

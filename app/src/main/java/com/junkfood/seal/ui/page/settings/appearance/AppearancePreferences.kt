@@ -1,6 +1,7 @@
 package com.junkfood.seal.ui.page.settings.appearance
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,7 +50,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.android.material.color.DynamicColors
 import com.junkfood.seal.R
 import com.junkfood.seal.download.Task
@@ -188,17 +188,13 @@ fun AppearancePreferences(onNavigateBack: () -> Unit, onNavigateTo: (String) -> 
                     }
                 }
 
-                HorizontalPagerIndicator(
-                    pagerState = pagerState,
+                PageIndicator(
+                    currentPage = pagerState.currentPage,
                     pageCount = pageCount,
                     modifier =
                         Modifier.clearAndSetSemantics {}
                             .align(Alignment.CenterHorizontally)
                             .padding(vertical = 12.dp),
-                    activeColor = MaterialTheme.colorScheme.primary,
-                    inactiveColor = MaterialTheme.colorScheme.outlineVariant,
-                    indicatorHeight = 6.dp,
-                    indicatorWidth = 6.dp,
                 )
                 PreferenceGroup {
                     if (DynamicColors.isDynamicColorAvailable()) {
@@ -214,8 +210,7 @@ fun AppearancePreferences(onNavigateBack: () -> Unit, onNavigateTo: (String) -> 
                     PreferenceSwitchWithDivider(
                         title = stringResource(id = R.string.dark_theme),
                         icon =
-                            if (isDarkTheme) Icons.Outlined.DarkMode
-                            else Icons.Outlined.LightMode,
+                            if (isDarkTheme) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
                         isChecked = isDarkTheme,
                         description = LocalDarkTheme.current.getDarkThemeDesc(),
                         onChecked = {
@@ -234,6 +229,23 @@ fun AppearancePreferences(onNavigateBack: () -> Unit, onNavigateTo: (String) -> 
             }
         },
     )
+}
+
+/** Dots under the palette pager (replaces the deprecated Accompanist pager indicator). */
+@Composable
+private fun PageIndicator(currentPage: Int, pageCount: Int, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        repeat(pageCount) { page ->
+            Box(
+                Modifier.size(6.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (page == currentPage) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outlineVariant
+                    )
+            )
+        }
+    }
 }
 
 @Composable

@@ -1,5 +1,5 @@
 [versions]
-# webview and pager-indicators stopped at 0.36.0 (deprecated), keep all accompanist modules aligned
+# Only accompanist-permissions is left (webview and pager-indicators were deprecated and replaced)
 accompanist = "0.36.0"
 # AGP 9 is a breaking migration (built-in Kotlin, new DSL); stay on the latest 8.x
 androidGradlePlugin = "8.13.2"
@@ -56,8 +56,6 @@ androidx-activity-compose = { group = "androidx.activity", name = "activity-comp
 androidx-lifecycle-runtimeCompose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
 
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
-accompanist-webview = { group = "com.google.accompanist", name = "accompanist-webview", version.ref = "accompanist" }
-accompanist-pager-indicators = { group = "com.google.accompanist", name = "accompanist-pager-indicators", version.ref = "accompanist" }
 
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
 
@@ -132,8 +130,6 @@ ktfmt-gradle = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 [bundles]
 accompanist = [
     "accompanist-permissions",
-    "accompanist-webview",
-    "accompanist-pager-indicators",
 ]
 
 androidxCompose = ["androidx-compose-ui",
