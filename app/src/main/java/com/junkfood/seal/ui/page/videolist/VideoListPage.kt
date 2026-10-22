@@ -43,6 +43,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -68,6 +69,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -79,6 +81,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.junkfood.seal.App
@@ -96,6 +99,7 @@ import com.junkfood.seal.ui.common.LocalWindowWidthState
 import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.CheckBoxItem
 import com.junkfood.seal.ui.component.ConfirmButton
+import com.junkfood.seal.ui.component.ConnectedChoiceRow
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.MediaListItem
 import com.junkfood.seal.ui.component.SealDialog
@@ -217,61 +221,89 @@ fun VideoListPage(
 
     @Composable
     fun FilterChips(modifier: Modifier = Modifier) {
-        Row(modifier.horizontalScroll(rememberScrollState()).selectableGroup()) {
-            Row(modifier = Modifier.padding(horizontal = 8.dp)) {
-                StatusFilter.entries.forEach { filter ->
+        Column(modifier) {
+            // Status is a single choice, so it gets the Expressive connected button group
+            ConnectedChoiceRow(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                options = StatusFilter.entries,
+                selected = statusFilter,
+                onSelect = {
+                    view.slightHapticFeedback()
+                    statusFilter = it
+                },
+            ) { filter ->
+                Text(
+                    text =
+                        when (filter) {
+                            StatusFilter.All -> stringResource(R.string.all)
+                            StatusFilter.Downloading ->
+                                stringResource(R.string.status_downloading) +
+                                    if (downloadingTasks.isNotEmpty()) " ${downloadingTasks.size}"
+                                    else ""
+                            StatusFilter.Finished -> stringResource(R.string.status_completed)
+                        },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Row(
+                Modifier.padding(top = 8.dp)
+                    .horizontalScroll(rememberScrollState())
+                    .selectableGroup()
+            ) {
+                Row(modifier = Modifier.padding(horizontal = 12.dp)) {
                     VideoFilterChip(
-                        selected = statusFilter == filter,
-                        onClick = { statusFilter = filter },
-                        label =
-                            when (filter) {
-                                StatusFilter.All -> stringResource(R.string.all)
-                                StatusFilter.Downloading ->
-                                    stringResource(R.string.status_downloading) +
-                                        if (downloadingTasks.isNotEmpty())
-                                            " ${downloadingTasks.size}"
-                                        else ""
-                                StatusFilter.Finished -> stringResource(R.string.status_completed)
-                            },
+                        selected = viewState.audioFilter,
+                        onClick = { viewModel.clickAudioFilter() },
+                        label = stringResource(id = R.string.audio),
                     )
-                }
-                VerticalDivider(
-                    modifier =
-                        Modifier.padding(horizontal = 6.dp)
-                            .height(24.dp)
-                            .align(Alignment.CenterVertically),
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                )
-                VideoFilterChip(
-                    selected = viewState.audioFilter,
-                    onClick = { viewModel.clickAudioFilter() },
-                    label = stringResource(id = R.string.audio),
-                )
 
-                VideoFilterChip(
-                    selected = viewState.videoFilter,
-                    onClick = { viewModel.clickVideoFilter() },
-                    label = stringResource(id = R.string.video),
-                )
-                if (filterSet.size > 1) {
-                    VerticalDivider(
-                        modifier =
-                            Modifier.padding(horizontal = 6.dp)
-                                .height(24.dp)
-                                .width(1f.dp)
-                                .align(Alignment.CenterVertically),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    VideoFilterChip(
+                        selected = viewState.videoFilter,
+                        onClick = { viewModel.clickVideoFilter() },
+                        label = stringResource(id = R.string.video),
                     )
-                    for (i in 0 until filterSet.size) {
-                        VideoFilterChip(
-                            selected = viewState.activeFilterIndex == i,
-                            onClick = { viewModel.clickExtractorFilter(i) },
-                            label = filterSet.elementAt(i),
+                    if (filterSet.size > 1) {
+                        VerticalDivider(
+                            modifier =
+                                Modifier.padding(horizontal = 6.dp)
+                                    .height(24.dp)
+                                    .width(1f.dp)
+                                    .align(Alignment.CenterVertically),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                         )
+                        for (i in 0 until filterSet.size) {
+                            VideoFilterChip(
+                                selected = viewState.activeFilterIndex == i,
+                                onClick = { viewModel.clickExtractorFilter(i) },
+                                label = filterSet.elementAt(i),
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    // Visible items form one segmented group: large outer corners, small inner ones
+    val visibleIds by
+        remember(videoList, viewState, filterSet) {
+            derivedStateOf {
+                videoList.filter { it.filterSort(viewState, filterSet) }.map { it.id }
+            }
+        }
+    val outerShape = MaterialTheme.shapes.extraLarge
+    val innerCorner = MaterialTheme.shapes.extraSmall.topStart
+    fun segmentShape(id: Int): Shape {
+        val index = visibleIds.indexOf(id)
+        val first = index <= 0
+        val last = index == visibleIds.lastIndex
+        return outerShape.copy(
+            topStart = if (first) outerShape.topStart else innerCorner,
+            topEnd = if (first) outerShape.topEnd else innerCorner,
+            bottomStart = if (last) outerShape.bottomStart else innerCorner,
+            bottomEnd = if (last) outerShape.bottomEnd else innerCorner,
+        )
     }
 
     val selectedItemIds = remember(videoList, viewState) { mutableStateListOf<Int>() }
@@ -584,7 +616,10 @@ fun VideoListPage(
                             enter = expandVertically() + fadeIn(),
                         ) {
                             MediaListItem(
-                                modifier = Modifier,
+                                modifier =
+                                    Modifier.padding(horizontal = 16.dp)
+                                        .padding(vertical = ListItemDefaults.SegmentedGap / 2),
+                                shape = segmentShape(id),
                                 title = videoTitle,
                                 author = videoAuthor,
                                 thumbnailUrl = thumbnailUrl,

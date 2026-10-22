@@ -1,10 +1,12 @@
 package com.junkfood.seal.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +16,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
@@ -25,9 +26,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +68,8 @@ fun MediaListItem(
     videoPath: String = "",
     videoUrl: String = "",
     videoFileSize: Long = 0L,
+    /** Segment shape; the list passes segmented shapes so items read as one group */
+    shape: Shape = PreferenceDefaults.shape,
     isSelectEnabled: () -> Boolean = { false },
     isSelected: () -> Boolean = { false },
     onSelect: () -> Unit = {},
@@ -78,9 +83,15 @@ fun MediaListItem(
     val isFileAvailable = videoFileSize != 0L
     val fileSizeText = videoFileSize.toFileSizeText()
 
+    val containerColor by
+        animateColorAsState(
+            if (isSelectEnabled() && isSelected()) MaterialTheme.colorScheme.secondaryContainer
+            else PreferenceDefaults.containerColor,
+            label = "containerColor",
+        )
     Box(
         modifier =
-            with(modifier) {
+            with(modifier.clip(shape).background(containerColor)) {
                     if (!isSelectEnabled())
                         combinedClickable(
                             enabled = true,
@@ -96,7 +107,10 @@ fun MediaListItem(
                 }
                 .fillMaxWidth()
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             AnimatedVisibility(
                 modifier = Modifier.align(Alignment.CenterVertically),
                 visible = isSelectEnabled(),
@@ -107,14 +121,19 @@ fun MediaListItem(
                     onCheckedChange = null,
                 )
             }
-            MediaImage(modifier = Modifier, imageModel = thumbnailUrl, isAudio = isAudio)
+            MediaImage(
+                modifier = Modifier,
+                imageModel = thumbnailUrl,
+                isAudio = isAudio,
+                shape = MaterialTheme.shapes.large,
+            )
             Column(
-                modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth(),
+                modifier = Modifier.padding(start = 16.dp, end = 32.dp).fillMaxWidth(),
                 verticalArrangement = Arrangement.Top,
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -123,7 +142,7 @@ fun MediaListItem(
                     Text(
                         modifier = Modifier.padding(top = 3.dp),
                         text = author,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -132,7 +151,7 @@ fun MediaListItem(
                     modifier = Modifier.padding(top = 3.dp),
                     text =
                         if (isFileAvailable) fileSizeText else stringResource(R.string.unavailable),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color =
                         with(MaterialTheme.colorScheme) {
                             if (isFileAvailable) onSurfaceVariant else error
@@ -142,14 +161,13 @@ fun MediaListItem(
             }
         }
         AnimatedVisibility(
-            modifier = Modifier.align(Alignment.BottomEnd),
+            modifier = Modifier.align(Alignment.CenterEnd),
             visible = !isSelectEnabled(),
             enter = fadeIn(tween(100)),
             exit = fadeOut(tween(100)),
         ) {
             IconButton(onClick = onShowContextMenu) {
                 Icon(
-                    modifier = Modifier.size(18.dp),
                     imageVector = Icons.Outlined.MoreVert,
                     contentDescription = stringResource(id = R.string.show_more_actions),
                 )
@@ -164,13 +182,14 @@ fun MediaImage(
     imageModel: String,
     isAudio: Boolean = false,
     contentDescription: String? = null,
+    shape: Shape = MaterialTheme.shapes.extraSmall,
 ) {
     AsyncImageImpl(
         modifier =
             modifier
                 .height(90.dp)
                 .aspectRatio(if (!isAudio) 16f / 9f else 1f, matchHeightConstraintsFirst = true)
-                .clip(MaterialTheme.shapes.extraSmall),
+                .clip(shape),
         model = imageModel,
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
