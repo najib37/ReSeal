@@ -101,6 +101,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.junkfood.seal.download.DownloaderV2
 import com.junkfood.seal.download.Task
 import com.junkfood.seal.ui.component.VideoFilterChip
+import com.junkfood.seal.ui.page.downloadv2.Filter
 import com.junkfood.seal.ui.page.downloadv2.ListItemStateText
 import com.junkfood.seal.ui.page.downloadv2.VideoListItem as TaskListItem
 import org.koin.compose.koinInject
@@ -170,6 +171,10 @@ fun VideoListPage(
             }
         }
     }
+    // Same rule as the queue's Downloading filter: queued, fetching or running (not canceled/failed)
+    val downloadingTasks by remember {
+        derivedStateOf { activeTasks.filter { Filter.Downloading.predict(it) } }
+    }
     var statusFilter by rememberSaveable { mutableStateOf(StatusFilter.All) }
     val hasContent = fullVideoList.isNotEmpty() || activeTasks.isNotEmpty()
 
@@ -217,7 +222,8 @@ fun VideoListPage(
                                 StatusFilter.All -> stringResource(R.string.all)
                                 StatusFilter.Downloading ->
                                     stringResource(R.string.status_downloading) +
-                                        if (activeTasks.isNotEmpty()) " ${activeTasks.size}"
+                                        if (downloadingTasks.isNotEmpty())
+                                            " ${downloadingTasks.size}"
                                         else ""
                                 StatusFilter.Finished -> stringResource(R.string.status_completed)
                             },
@@ -537,7 +543,12 @@ fun VideoListPage(
                 }
             }
             if (statusFilter != StatusFilter.Finished) {
-                items(items = activeTasks, key = { (task, _) -> task.id }) { (_, state) ->
+                items(
+                    items =
+                        if (statusFilter == StatusFilter.Downloading) downloadingTasks
+                        else activeTasks,
+                    key = { (task, _) -> task.id },
+                ) { (_, state) ->
                     // "More" opens the queue, where cancel/retry/share live
                     TaskListItem(
                         modifier =
