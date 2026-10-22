@@ -29,6 +29,8 @@
         </intent>
     </queries>
 
+    <!-- extractNativeLibs: youtubedl-android runs its bundled python/ffmpeg from nativeLibraryDir.
+         requestLegacyExternalStorage: still needed on Android 10 to write to Download/Seal. -->
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -79,11 +81,15 @@
             android:name=".DownloadService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="specialUse">
+            <!-- Required for specialUse foreground services (Android 14+, Play policy) -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps user-started media downloads running (yt-dlp) while the app is in the background" />
+        </service>
 
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation"
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="unspecified"
