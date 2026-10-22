@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.CreditItem
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.svg.DynamicColorImageVectors
 import com.junkfood.seal.ui.svg.drawablevectors.coder
@@ -129,8 +130,12 @@ fun CreditsPage(onNavigateBack: () -> Unit) {
                         )
                     }
                 }
-                items(creditsList) { item ->
-                    CreditItem(title = item.title, license = item.license) { openUrl(item.url) }
+                item {
+                    PreferenceGroup {
+                        creditsList.forEach { item ->
+                            CreditItem(title = item.title, license = item.license) { openUrl(item.url) }
+                        }
+                    }
                 }
             }
         },

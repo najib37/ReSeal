@@ -82,6 +82,7 @@ import com.junkfood.seal.ui.component.DialogSwitchItem
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.HelpDialog
 import com.junkfood.seal.ui.component.PasteFromClipBoardButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceItemVariant
 import com.junkfood.seal.ui.component.PreferenceSwitchWithContainer
 import com.junkfood.seal.ui.component.SealDialog
@@ -289,31 +290,37 @@ fun CookieProfilePage(
                     },
                 )
             }
-            itemsIndexed(cookies) { _, item ->
-                PreferenceItemVariant(
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    title = item.url,
-                    onClick = {
-                        cookiesViewModel.setEditingProfile(item)
-                        showEditDialog = true
-                    },
-                    onClickLabel = stringResource(id = R.string.edit),
-                    onLongClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        cookiesViewModel.setEditingProfile(item)
-                        showDeleteDialog = true
-                    },
-                    onLongClickLabel = stringResource(R.string.remove),
-                )
+            item {
+                PreferenceGroup {
+                    cookies.forEach { item ->
+                        PreferenceItemVariant(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            title = item.url,
+                            onClick = {
+                                cookiesViewModel.setEditingProfile(item)
+                                showEditDialog = true
+                            },
+                            onClickLabel = stringResource(id = R.string.edit),
+                            onLongClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                cookiesViewModel.setEditingProfile(item)
+                                showDeleteDialog = true
+                            },
+                            onLongClickLabel = stringResource(R.string.remove),
+                        )
+                    }
+                }
             }
 
             item {
-                PreferenceItemVariant(
-                    title = stringResource(id = R.string.generate_new_cookies),
-                    icon = Icons.Outlined.Add,
-                ) {
-                    cookiesViewModel.setEditingProfile()
-                    showEditDialog = true
+                PreferenceGroup {
+                    PreferenceItemVariant(
+                        title = stringResource(id = R.string.generate_new_cookies),
+                        icon = Icons.Outlined.Add,
+                    ) {
+                        cookiesViewModel.setEditingProfile()
+                        showEditDialog = true
+                    }
                 }
             }
             item {

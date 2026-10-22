@@ -72,6 +72,7 @@ import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.ConfirmButton
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.HelpDialog
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceItemVariant
 import com.junkfood.seal.ui.component.PreferenceSwitchWithContainer
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
@@ -315,45 +316,49 @@ fun TemplateListPage(onNavigateBack: () -> Unit, onNavigateToEditPage: (Int) -> 
                     },
                 )
             }
-            items(templates) { commandTemplate ->
-                TemplateItem(
-                    label = commandTemplate.name,
-                    template = commandTemplate.template,
-                    selected = selectedTemplateId == commandTemplate.id,
-                    isMultiSelectEnabled = isMultiSelectEnabled,
-                    onCheckedChange = {
-                        if (selectedTemplates.contains(commandTemplate))
-                            selectedTemplates.remove(commandTemplate)
-                        else selectedTemplates.add(commandTemplate)
-                    },
-                    checked = selectedTemplates.contains(commandTemplate),
-                    onClick = { onNavigateToEditPage(commandTemplate.id) },
-                    onSelect = {
-                        selectedTemplateId = commandTemplate.id
-                        PreferenceUtil.encodeInt(TEMPLATE_ID, selectedTemplateId)
-                    },
-                    onLongClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        isMultiSelectEnabled = true
-                        selectedTemplates.add(commandTemplate)
-                    },
-                )
+            item {
+                PreferenceGroup {
+                    templates.forEach { commandTemplate ->
+                        TemplateItem(
+                            label = commandTemplate.name,
+                            template = commandTemplate.template,
+                            selected = selectedTemplateId == commandTemplate.id,
+                            isMultiSelectEnabled = isMultiSelectEnabled,
+                            onCheckedChange = {
+                                if (selectedTemplates.contains(commandTemplate))
+                                    selectedTemplates.remove(commandTemplate)
+                                else selectedTemplates.add(commandTemplate)
+                            },
+                            checked = selectedTemplates.contains(commandTemplate),
+                            onClick = { onNavigateToEditPage(commandTemplate.id) },
+                            onSelect = {
+                                selectedTemplateId = commandTemplate.id
+                                PreferenceUtil.encodeInt(TEMPLATE_ID, selectedTemplateId)
+                            },
+                            onLongClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                isMultiSelectEnabled = true
+                                selectedTemplates.add(commandTemplate)
+                            },
+                        )
+                    }
+                }
             }
             if (!isMultiSelectEnabled) {
                 item {
-                    PreferenceItemVariant(
-                        title = stringResource(id = R.string.new_template),
-                        icon = Icons.Outlined.Add,
-                    ) {
-                        onNavigateToEditPage(-1)
-                    }
-                }
-                item {
-                    PreferenceItemVariant(
-                        title = stringResource(id = R.string.edit_shortcuts),
-                        icon = Icons.Outlined.BookmarkAdd,
-                    ) {
-                        showShortcutsDialog = true
+                    PreferenceGroup {
+                        PreferenceItemVariant(
+                            title = stringResource(id = R.string.new_template),
+                            icon = Icons.Outlined.Add,
+                        ) {
+                            onNavigateToEditPage(-1)
+                        }
+                        PreferenceItemVariant(
+                            title = stringResource(id = R.string.edit_shortcuts),
+                            icon = Icons.Outlined.BookmarkAdd,
+                        ) {
+                            showShortcutsDialog = true
+                        }
                     }
                 }
             }

@@ -17,8 +17,8 @@ import androidx.compose.ui.res.stringResource
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.LocalDarkTheme
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceSingleChoiceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferenceSwitchVariant
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.DarkThemePreference.Companion.FOLLOW_SYSTEM
@@ -49,43 +49,43 @@ fun DarkThemePreferences(onNavigateBack: () -> Unit) {
         },
         content = {
             LazyColumn(modifier = Modifier, contentPadding = it) {
-                if (Build.VERSION.SDK_INT >= 29)
-                    item {
+                item {
+                    PreferenceGroup {
+                        if (Build.VERSION.SDK_INT >= 29) {
+                            PreferenceSingleChoiceItem(
+                                text = stringResource(R.string.follow_system),
+                                selected = darkThemePreference.darkThemeValue == FOLLOW_SYSTEM,
+                            ) {
+                                PreferenceUtil.modifyDarkThemePreference(FOLLOW_SYSTEM)
+                            }
+                        }
                         PreferenceSingleChoiceItem(
-                            text = stringResource(R.string.follow_system),
-                            selected = darkThemePreference.darkThemeValue == FOLLOW_SYSTEM,
+                            text = stringResource(R.string.on),
+                            selected = darkThemePreference.darkThemeValue == ON,
                         ) {
-                            PreferenceUtil.modifyDarkThemePreference(FOLLOW_SYSTEM)
+                            PreferenceUtil.modifyDarkThemePreference(ON)
+                        }
+                        PreferenceSingleChoiceItem(
+                            text = stringResource(R.string.off),
+                            selected = darkThemePreference.darkThemeValue == OFF,
+                        ) {
+                            PreferenceUtil.modifyDarkThemePreference(OFF)
                         }
                     }
-                item {
-                    PreferenceSingleChoiceItem(
-                        text = stringResource(R.string.on),
-                        selected = darkThemePreference.darkThemeValue == ON,
-                    ) {
-                        PreferenceUtil.modifyDarkThemePreference(ON)
-                    }
                 }
                 item {
-                    PreferenceSingleChoiceItem(
-                        text = stringResource(R.string.off),
-                        selected = darkThemePreference.darkThemeValue == OFF,
-                    ) {
-                        PreferenceUtil.modifyDarkThemePreference(OFF)
+                    PreferenceGroup(title = stringResource(R.string.additional_settings)) {
+                        PreferenceSwitchVariant(
+                            title = stringResource(R.string.high_contrast),
+                            icon = Icons.Outlined.Contrast,
+                            isChecked = isHighContrastModeEnabled,
+                            onClick = {
+                                PreferenceUtil.modifyDarkThemePreference(
+                                    isHighContrastModeEnabled = !isHighContrastModeEnabled
+                                )
+                            },
+                        )
                     }
-                }
-                item { PreferenceSubtitle(text = stringResource(R.string.additional_settings)) }
-                item {
-                    PreferenceSwitchVariant(
-                        title = stringResource(R.string.high_contrast),
-                        icon = Icons.Outlined.Contrast,
-                        isChecked = isHighContrastModeEnabled,
-                        onClick = {
-                            PreferenceUtil.modifyDarkThemePreference(
-                                isHighContrastModeEnabled = !isHighContrastModeEnabled
-                            )
-                        },
-                    )
                 }
             }
         },

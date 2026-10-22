@@ -44,8 +44,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceSingleChoiceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.PreferencesHintCard
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.page.settings.about.weblate
@@ -176,41 +176,38 @@ private fun LanguagePageImpl(
                 }
 
                 if (suggestedLocales.isNotEmpty()) {
+                    item {
+                        PreferenceGroup(title = stringResource(id = R.string.suggested)) {
+                            if (!suggestedLocales.contains(Locale.getDefault())) {
+                                PreferenceSingleChoiceItem(
+                                    text = stringResource(id = R.string.follow_system),
+                                    selected = !suggestedLocales.contains(selectedLocale),
+                                ) {
+                                    onLanguageSelected(null)
+                                }
+                            }
 
-                    item { PreferenceSubtitle(text = stringResource(id = R.string.suggested)) }
-
-                    if (!suggestedLocales.contains(Locale.getDefault())) {
-                        item {
-                            PreferenceSingleChoiceItem(
-                                text = stringResource(id = R.string.follow_system),
-                                selected = !suggestedLocales.contains(selectedLocale),
-                            ) {
-                                onLanguageSelected(null)
+                            for (locale in suggestedLocales) {
+                                PreferenceSingleChoiceItem(
+                                    text = locale.toDisplayName(),
+                                    selected = selectedLocale == locale,
+                                ) {
+                                    onLanguageSelected(locale)
+                                }
                             }
                         }
                     }
+                }
 
-                    for (locale in suggestedLocales) {
-                        item {
+                item {
+                    PreferenceGroup(title = stringResource(id = R.string.all_languages)) {
+                        for (locale in otherLocales) {
                             PreferenceSingleChoiceItem(
                                 text = locale.toDisplayName(),
                                 selected = selectedLocale == locale,
                             ) {
                                 onLanguageSelected(locale)
                             }
-                        }
-                    }
-                }
-
-                item { PreferenceSubtitle(text = stringResource(id = R.string.all_languages)) }
-
-                for (locale in otherLocales) {
-                    item {
-                        PreferenceSingleChoiceItem(
-                            text = locale.toDisplayName(),
-                            selected = selectedLocale == locale,
-                        ) {
-                            onLanguageSelected(locale)
                         }
                     }
                 }

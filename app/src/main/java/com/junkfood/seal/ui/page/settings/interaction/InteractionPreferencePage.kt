@@ -16,8 +16,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.PreferenceGroup
 import com.junkfood.seal.ui.component.PreferenceItem
-import com.junkfood.seal.ui.component.PreferenceSubtitle
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.util.DOWNLOAD_TYPE_INITIALIZATION
 import com.junkfood.seal.util.PreferenceUtil.getInt
@@ -47,20 +47,20 @@ fun InteractionPreferencePage(modifier: Modifier = Modifier, onBack: () -> Unit)
     ) {
         LazyColumn(modifier = Modifier, contentPadding = it) {
             item {
-                PreferenceSubtitle(text = stringResource(id = R.string.settings_before_download))
-            }
-
-            item {
-                PreferenceItem(
-                    title = stringResource(id = R.string.download_type),
-                    description =
-                        when (initialType) {
-                            USE_PREVIOUS_SELECTION ->
-                                stringResource(id = R.string.use_previous_selection)
-                            else -> stringResource(id = R.string.none)
-                        },
+                PreferenceGroup(
+                    title = stringResource(id = R.string.settings_before_download)
                 ) {
-                    showDownloadTypeDialog = true
+                    PreferenceItem(
+                        title = stringResource(id = R.string.download_type),
+                        description =
+                            when (initialType) {
+                                USE_PREVIOUS_SELECTION ->
+                                    stringResource(id = R.string.use_previous_selection)
+                                else -> stringResource(id = R.string.none)
+                            },
+                    ) {
+                        showDownloadTypeDialog = true
+                    }
                 }
             }
         }
