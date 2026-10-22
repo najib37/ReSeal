@@ -33,7 +33,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -149,7 +148,7 @@ fun MediaListItem(
             enter = fadeIn(tween(100)),
             exit = fadeOut(tween(100)),
         ) {
-            IconButton(modifier = Modifier.clearAndSetSemantics {}, onClick = onShowContextMenu) {
+            IconButton(onClick = onShowContextMenu) {
                 Icon(
                     modifier = Modifier.size(18.dp),
                     imageVector = Icons.Outlined.MoreVert,

@@ -160,7 +160,12 @@ android {
 
 ktfmt { kotlinLangStyle() }
 
-kotlin { jvmToolchain(21) }
+kotlin {
+    jvmToolchain(21)
+    compilerOptions {
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
+    }
+}
 
 dependencies {
     implementation(project(":color"))
