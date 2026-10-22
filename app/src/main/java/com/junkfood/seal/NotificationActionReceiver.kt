@@ -22,6 +22,7 @@ class NotificationActionReceiver : BroadcastReceiver(), KoinComponent {
 
         const val ACTION_CANCEL_TASK = 0
         const val ACTION_ERROR_REPORT = 1
+        const val ACTION_RESTART_TASK = 2
 
         const val ACTION_KEY = PACKAGE_NAME_PREFIX + "action"
         const val TASK_ID_KEY = PACKAGE_NAME_PREFIX + "taskId"
@@ -45,6 +46,20 @@ class NotificationActionReceiver : BroadcastReceiver(), KoinComponent {
                 val errorReport = intent.getStringExtra(ERROR_REPORT_KEY)
                 if (!errorReport.isNullOrEmpty()) copyErrorReport(errorReport, notificationId)
             }
+
+            ACTION_RESTART_TASK -> {
+                val taskId = intent.getStringExtra(TASK_ID_KEY)
+                restartTask(taskId, notificationId)
+            }
+        }
+    }
+
+    private fun restartTask(taskId: String?, notificationId: Int) {
+        if (taskId.isNullOrEmpty()) return
+        // The progress notification comes back as soon as the task runs again
+        NotificationUtil.cancelNotification(notificationId)
+        if (!downloader.restart(taskId)) {
+            Log.w(TAG, "Task (id:$taskId) not found, nothing to restart")
         }
     }
 

@@ -19,6 +19,7 @@ import com.junkfood.seal.NotificationActionReceiver
 import com.junkfood.seal.NotificationActionReceiver.Companion.ACTION_CANCEL_TASK
 import com.junkfood.seal.NotificationActionReceiver.Companion.ACTION_ERROR_REPORT
 import com.junkfood.seal.NotificationActionReceiver.Companion.ACTION_KEY
+import com.junkfood.seal.NotificationActionReceiver.Companion.ACTION_RESTART_TASK
 import com.junkfood.seal.NotificationActionReceiver.Companion.ERROR_REPORT_KEY
 import com.junkfood.seal.NotificationActionReceiver.Companion.NOTIFICATION_ID_KEY
 import com.junkfood.seal.NotificationActionReceiver.Companion.TASK_ID_KEY
@@ -38,6 +39,7 @@ object NotificationUtil {
     private const val NOTIFICATION_GROUP_ID = "seal.download.notification"
     private const val DEFAULT_NOTIFICATION_ID = 100
     const val SERVICE_NOTIFICATION_ID = 123
+    private const val RESTART_REQUEST_CODE_OFFSET = 7919
     private lateinit var serviceNotification: Notification
 
     //    private var builder =
@@ -102,9 +104,29 @@ object NotificationUtil {
                 pendingIntent?.let {
                     addAction(R.drawable.outline_cancel_24, context.getString(R.string.cancel), it)
                 }
+                taskId?.let { addAction(restartAction(it, notificationId)) }
                 notificationManager.notify(notificationId, build())
             }
     }
+
+    /** "Restart" button: cancels the task if it is still running, then queues it again. */
+    private fun restartAction(taskId: String, notificationId: Int): Action =
+        Intent(context.applicationContext, NotificationActionReceiver::class.java)
+            .putExtra(TASK_ID_KEY, taskId)
+            .putExtra(NOTIFICATION_ID_KEY, notificationId)
+            .putExtra(ACTION_KEY, ACTION_RESTART_TASK)
+            .let {
+                PendingIntent.getBroadcast(
+                    context.applicationContext,
+                    // Distinct request code so it doesn't replace the cancel/copy-report intents
+                    notificationId + RESTART_REQUEST_CODE_OFFSET,
+                    it,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            }
+            .let {
+                Action(android.R.drawable.ic_popup_sync, context.getString(R.string.restart), it)
+            }
 
     fun finishNotification(
         notificationId: Int = DEFAULT_NOTIFICATION_ID,
@@ -178,6 +200,7 @@ object NotificationUtil {
         textId: Int = R.string.download_error_msg,
         notificationId: Int,
         report: String,
+        taskId: String? = null,
     ) {
         if (!NOTIFICATION.getBoolean()) return
 
@@ -208,6 +231,7 @@ object NotificationUtil {
                 pendingIntent,
             )
             .run {
+                taskId?.let { addAction(restartAction(it, notificationId)) }
                 notificationManager.cancel(notificationId)
                 notificationManager.notify(notificationId, build())
             }
