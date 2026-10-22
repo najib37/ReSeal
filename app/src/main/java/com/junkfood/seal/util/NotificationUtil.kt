@@ -40,12 +40,12 @@ object NotificationUtil {
     private const val DEFAULT_NOTIFICATION_ID = 100
     const val SERVICE_NOTIFICATION_ID = 123
     private const val RESTART_REQUEST_CODE_OFFSET = 7919
-    private lateinit var serviceNotification: Notification
 
-    //    private var builder =
-    //        NotificationCompat.Builder(context, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_seal)
-    private val commandNotificationBuilder =
-        NotificationCompat.Builder(context, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_seal)
+    // PendingIntents ignore extras when matching, so each button needs its own action; otherwise
+    // the cancel, copy-report and restart intents of one notification replace each other
+    private const val INTENT_ACTION_CANCEL = "com.junkfood.seal.action.CANCEL_TASK"
+    private const val INTENT_ACTION_RESTART = "com.junkfood.seal.action.RESTART_TASK"
+    private const val INTENT_ACTION_ERROR_REPORT = "com.junkfood.seal.action.COPY_ERROR_REPORT"
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun createNotificationChannel() {
@@ -77,21 +77,23 @@ object NotificationUtil {
         text: String? = null,
     ) {
         if (!NOTIFICATION.getBoolean()) return
-        val pendingIntent =
-            taskId?.let {
-                Intent(context.applicationContext, NotificationActionReceiver::class.java)
-                    .putExtra(TASK_ID_KEY, taskId)
-                    .putExtra(NOTIFICATION_ID_KEY, notificationId)
-                    .putExtra(ACTION_KEY, ACTION_CANCEL_TASK)
-                    .run {
-                        PendingIntent.getBroadcast(
-                            context.applicationContext,
-                            notificationId,
-                            this,
-                            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
-                        )
-                    }
-            }
+        val pendingIntent = taskId?.let {
+            Intent(context.applicationContext, NotificationActionReceiver::class.java)
+                .putExtra(TASK_ID_KEY, taskId)
+                .putExtra(NOTIFICATION_ID_KEY, notificationId)
+                .putExtra(ACTION_KEY, ACTION_CANCEL_TASK)
+                .setAction(INTENT_ACTION_CANCEL)
+                .run {
+                    PendingIntent.getBroadcast(
+                        context.applicationContext,
+                        notificationId,
+                        this,
+                        PendingIntent.FLAG_ONE_SHOT or
+                            PendingIntent.FLAG_IMMUTABLE or
+                            PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+                }
+        }
 
         NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_seal)
@@ -115,6 +117,7 @@ object NotificationUtil {
             .putExtra(TASK_ID_KEY, taskId)
             .putExtra(NOTIFICATION_ID_KEY, notificationId)
             .putExtra(ACTION_KEY, ACTION_RESTART_TASK)
+            .setAction(INTENT_ACTION_RESTART)
             .let {
                 PendingIntent.getBroadcast(
                     context.applicationContext,
@@ -151,45 +154,15 @@ object NotificationUtil {
         notificationManager.notify(notificationId, builder.build())
     }
 
-    fun finishNotificationForCustomCommands(
-        notificationId: Int = DEFAULT_NOTIFICATION_ID,
-        title: String? = null,
-        text: String? = null,
-    ) {
-        //        notificationManager.cancel(notificationId)
-        val builder =
-            NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_seal)
-                .setContentText(text)
-                .setProgress(0, 0, false)
-                .setAutoCancel(true)
-                .setOngoing(false)
-                .setStyle(null)
-        title?.let { builder.setContentTitle(title) }
-
-        notificationManager.notify(notificationId, builder.build())
-    }
-
-    fun makeServiceNotification(intent: PendingIntent, text: String? = null): Notification {
-        serviceNotification =
-            NotificationCompat.Builder(context, SERVICE_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_seal)
-                .setContentTitle(context.getString(R.string.service_title))
-                .setContentText(text)
-                .setOngoing(true)
-                .setContentIntent(intent)
-                .setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE)
-                .build()
-        return serviceNotification
-    }
-
-    fun updateServiceNotificationForPlaylist(index: Int, itemCount: Int) {
-        serviceNotification =
-            NotificationCompat.Builder(context, serviceNotification)
-                .setContentTitle(context.getString(R.string.service_title) + " ($index/$itemCount)")
-                .build()
-        notificationManager.notify(SERVICE_NOTIFICATION_ID, serviceNotification)
-    }
+    fun makeServiceNotification(intent: PendingIntent, text: String? = null): Notification =
+        NotificationCompat.Builder(context, SERVICE_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_seal)
+            .setContentTitle(context.getString(R.string.service_title))
+            .setContentText(text)
+            .setOngoing(true)
+            .setContentIntent(intent)
+            .setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
 
     fun cancelNotification(notificationId: Int) {
         notificationManager.cancel(notificationId)
@@ -210,6 +183,7 @@ object NotificationUtil {
                 .putExtra(NOTIFICATION_ID_KEY, notificationId)
                 .putExtra(ERROR_REPORT_KEY, report)
                 .putExtra(ACTION_KEY, ACTION_ERROR_REPORT)
+                .setAction(INTENT_ACTION_ERROR_REPORT)
 
         val pendingIntent =
             PendingIntent.getBroadcast(
@@ -252,13 +226,16 @@ object NotificationUtil {
                 .putExtra(TASK_ID_KEY, taskId)
                 .putExtra(NOTIFICATION_ID_KEY, notificationId)
                 .putExtra(ACTION_KEY, ACTION_CANCEL_TASK)
+                .setAction(INTENT_ACTION_CANCEL)
 
         val pendingIntent =
             PendingIntent.getBroadcast(
                 context.applicationContext,
                 notificationId,
                 intent,
-                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+                PendingIntent.FLAG_ONE_SHOT or
+                    PendingIntent.FLAG_IMMUTABLE or
+                    PendingIntent.FLAG_UPDATE_CURRENT,
             )
 
         NotificationCompat.Builder(context, CHANNEL_ID)

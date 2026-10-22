@@ -48,8 +48,8 @@ import com.junkfood.seal.ui.common.id
 import com.junkfood.seal.ui.common.slideInVerticallyComposable
 import com.junkfood.seal.ui.page.command.TaskListPage
 import com.junkfood.seal.ui.page.command.TaskLogPage
-import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel
 import com.junkfood.seal.ui.page.downloadv2.DownloadPageV2
+import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel
 import com.junkfood.seal.ui.page.settings.SettingsPage
 import com.junkfood.seal.ui.page.settings.about.AboutPage
 import com.junkfood.seal.ui.page.settings.about.CreditsPage
@@ -71,8 +71,8 @@ import com.junkfood.seal.ui.page.settings.network.NetworkPreferences
 import com.junkfood.seal.ui.page.settings.network.WebViewPage
 import com.junkfood.seal.ui.page.settings.troubleshooting.TroubleShootingPage
 import com.junkfood.seal.ui.page.videolist.VideoListPage
+import com.junkfood.seal.util.CookieUtil
 import com.junkfood.seal.util.DatabaseUtil
-import com.junkfood.seal.util.DownloadUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -276,7 +276,7 @@ fun NavGraphBuilder.settingsGraph(
                 CookieManager.getInstance().flush()
                 cookiesViewModel.viewModelScope.launch(Dispatchers.IO) {
                     val url = cookiesViewModel.stateFlow.value.editingCookieProfile.url
-                    DownloadUtil.extractCookiesFromWebView().onSuccess { content ->
+                    CookieUtil.extractCookiesFromWebView(url).onSuccess { content ->
                         val existing = DatabaseUtil.getCookieProfileByUrl(url)
                         val profile =
                             existing?.copy(content = content)

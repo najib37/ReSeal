@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -24,41 +26,25 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddLink
-import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.ContentPasteGo
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.SignalCellularAlt
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material.icons.outlined.SignalCellularAlt
-import androidx.compose.material3.Button
-import androidx.compose.material3.Switch
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
-import com.junkfood.seal.App
-import com.junkfood.seal.util.CELLULAR_DOWNLOAD
-import com.junkfood.seal.util.PreferenceUtil.getBoolean
-import com.junkfood.seal.util.PreferenceUtil.updateBoolean
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
-import com.junkfood.seal.ui.common.LocalFixedColorRoles
-import com.junkfood.seal.ui.component.ActionSheetPrimaryButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -73,24 +59,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.junkfood.seal.App
 import com.junkfood.seal.R
+import com.junkfood.seal.ui.common.LocalFixedColorRoles
+import com.junkfood.seal.ui.component.ActionSheetPrimaryButton
 import com.junkfood.seal.ui.component.ClearButton
 import com.junkfood.seal.ui.component.FilledButtonWithIcon
-import com.junkfood.seal.ui.component.OutlinedButtonWithIcon
 import com.junkfood.seal.ui.component.OutlinedDismissButton
 import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.Action
 import com.junkfood.seal.ui.theme.ErrorTonalPalettes
+import com.junkfood.seal.util.CELLULAR_DOWNLOAD
+import com.junkfood.seal.util.PreferenceUtil.getBoolean
+import com.junkfood.seal.util.PreferenceUtil.updateBoolean
 import com.junkfood.seal.util.findURLsFromString
 
 @Composable
@@ -208,7 +201,10 @@ private fun InputUrlPageImpl(
                         contentColor = fixedColors.onSecondaryFixedVariant,
                         imageVector = Icons.Outlined.ContentPasteGo,
                         text =
-                            stringResource(R.string.select_multiple_link, urlListFromClipboard.size),
+                            stringResource(
+                                R.string.select_multiple_link,
+                                urlListFromClipboard.size,
+                            ),
                         onClick = { showPasteDialog = true },
                     )
                 }
@@ -376,7 +372,8 @@ private fun URLSelectionDialog(
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(48.dp),
+                        modifier =
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(48.dp),
                     ) {
                         TriStateCheckbox(
                             state = checkBoxState,
@@ -512,7 +509,7 @@ private fun SavedUrlDialogImpl(
                 text = stringResource(R.string.proceed),
                 enabled = selectedUrl != null,
             ) {
-                onActionPost(Action.ProceedWithURLs(listOf(selectedUrl!!)))
+                selectedUrl?.let { onActionPost(Action.ProceedWithURLs(listOf(it))) }
             }
         },
         text = {

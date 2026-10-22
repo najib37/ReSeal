@@ -1,36 +1,21 @@
 package com.junkfood.seal.ui.component
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -79,25 +64,6 @@ fun TextButtonWithIcon(
             Icon(modifier = Modifier.size(18.dp), imageVector = icon, contentDescription = null)
             Text(modifier = Modifier.padding(start = 8.dp), text = text)
         }
-    }
-}
-
-@Composable
-fun FilledTonalButtonWithIcon(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    icon: ImageVector,
-    text: String,
-    colors: ButtonColors = ButtonDefaults.filledTonalButtonColors(),
-) {
-    FilledTonalButton(
-        modifier = modifier,
-        onClick = onClick,
-        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-        colors = colors,
-    ) {
-        Icon(modifier = Modifier.size(18.dp), imageVector = icon, contentDescription = null)
-        Text(modifier = Modifier.padding(start = 8.dp), text = text)
     }
 }
 
@@ -153,46 +119,4 @@ fun LinkButton(
         icon = icon,
         text = text,
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Composable
-fun LongTapTextButton(
-    onClick: () -> Unit,
-    onClickLabel: String,
-    onLongClick: () -> Unit,
-    onLongClickLabel: String,
-    modifier: Modifier = Modifier,
-    shape: Shape = ButtonDefaults.shape,
-    border: BorderStroke? = null,
-    contentPadding: PaddingValues = ButtonDefaults.ButtonWithIconContentPadding,
-    content: @Composable RowScope.() -> Unit,
-) {
-    val contentColor = MaterialTheme.colorScheme.primary
-    Row(
-        modifier =
-            modifier
-                .clip(shape)
-                .combinedClickable(
-                    onClick = onClick,
-                    onClickLabel = onClickLabel,
-                    onLongClick = onLongClick,
-                    onLongClickLabel = onLongClickLabel,
-                )
-    ) {
-        CompositionLocalProvider(LocalContentColor provides contentColor) {
-            ProvideTextStyle(value = MaterialTheme.typography.labelLarge) {
-                Row(
-                    Modifier.defaultMinSize(
-                            minWidth = ButtonDefaults.MinWidth,
-                            minHeight = ButtonDefaults.MinHeight,
-                        )
-                        .padding(contentPadding),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    content = content,
-                )
-            }
-        }
-    }
 }

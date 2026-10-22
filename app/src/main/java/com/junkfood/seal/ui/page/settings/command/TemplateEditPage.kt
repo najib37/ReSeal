@@ -56,6 +56,7 @@ import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.ClearButton
 import com.junkfood.seal.ui.component.LinkButton
 import com.junkfood.seal.ui.component.PasteFromClipBoardButton
+import com.junkfood.seal.ui.component.PreferenceDefaults
 import com.junkfood.seal.ui.component.ShortcutChip
 import com.junkfood.seal.ui.component.TextButtonWithIcon
 import com.junkfood.seal.util.DatabaseUtil
@@ -125,7 +126,7 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
             item {
                 val description = stringResource(R.string.template_label)
 
-                Column(Modifier.padding(horizontal = 24.dp)) {
+                Column(Modifier.padding(horizontal = PreferenceDefaults.ScreenPadding)) {
                     AdjacentLabel(text = description, modifier = Modifier.padding(top = 12.dp))
                     OutlinedTextField(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
@@ -137,7 +138,7 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                 }
             }
             item {
-                Column(Modifier.padding(horizontal = 24.dp)) {
+                Column(Modifier.padding(horizontal = PreferenceDefaults.ScreenPadding)) {
                     val description = stringResource(R.string.custom_command_template)
                     AdjacentLabel(text = description, modifier = Modifier)
                     ProvideTextStyle(
@@ -188,7 +189,10 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                 }
             }
             item {
-                val shortcuts by DatabaseUtil.getShortcuts().collectAsState(emptyList())
+                val shortcuts by remember {
+                    DatabaseUtil.getShortcuts()
+                }
+                    .collectAsState(emptyList())
                 Column(
                     modifier = Modifier.fillParentMaxWidth().horizontalScroll(rememberScrollState())
                 ) {
@@ -201,13 +205,12 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                             ShortcutChip(
                                 text = item.option,
                                 onClick = {
-                                    templateText =
-                                        templateText.run {
-                                            if (isEmpty()) item.option
-                                            else
-                                                this.removeSuffix(" ").removeSuffix("\n") +
-                                                    "\n${item.option}"
-                                        }
+                                    templateText = templateText.run {
+                                        if (isEmpty()) item.option
+                                        else
+                                            this.removeSuffix(" ").removeSuffix("\n") +
+                                                "\n${item.option}"
+                                    }
                                 },
                             )
                         }

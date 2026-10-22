@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -34,7 +33,6 @@ data class Credit(val title: String = "", val license: String? = null, val url: 
 
 private const val GPL_V3 = "GNU General Public License v3.0"
 private const val GPL_V2 = "GNU General Public License v2.0"
-private const val LGPL_V2_1 = "GNU Lesser General Public License, version 2.1"
 private const val APACHE_V2 = "Apache License, Version 2.0"
 private const val UNLICENSE = "The Unlicense"
 private const val BSD = "BSD 3-Clause License"
@@ -133,7 +131,9 @@ fun CreditsPage(onNavigateBack: () -> Unit) {
                 item {
                     PreferenceGroup {
                         creditsList.forEach { item ->
-                            CreditItem(title = item.title, license = item.license) { openUrl(item.url) }
+                            CreditItem(title = item.title, license = item.license) {
+                                openUrl(item.url)
+                            }
                         }
                     }
                 }

@@ -13,19 +13,19 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.content.getSystemService
 import com.google.android.material.color.DynamicColors
 import com.junkfood.seal.download.DownloaderV2
 import com.junkfood.seal.download.DownloaderV2Impl
-import com.junkfood.seal.ui.page.download.HomePageViewModel
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel
 import com.junkfood.seal.ui.page.settings.directory.Directory
 import com.junkfood.seal.ui.page.settings.network.CookiesViewModel
 import com.junkfood.seal.ui.page.videolist.VideoListViewModel
 import com.junkfood.seal.util.AUDIO_DIRECTORY
 import com.junkfood.seal.util.COMMAND_DIRECTORY
+import com.junkfood.seal.util.CookieUtil
 import com.junkfood.seal.util.DatabaseUtil
-import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.FileUtil
 import com.junkfood.seal.util.FileUtil.createEmptyFile
 import com.junkfood.seal.util.FileUtil.getCookiesFile
@@ -55,6 +55,8 @@ import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
+private const val TAG = "App"
+
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
@@ -67,7 +69,6 @@ class App : Application() {
                 module {
                     single<DownloaderV2> { DownloaderV2Impl(androidContext()) }
                     viewModel { DownloadDialogViewModel(downloader = get()) }
-                    viewModel { HomePageViewModel() }
                     viewModel { CookiesViewModel() }
                     viewModel { VideoListViewModel() }
                 }
@@ -75,12 +76,11 @@ class App : Application() {
         }
 
         context = applicationContext
-        packageInfo =
-            packageManager.run {
-                if (Build.VERSION.SDK_INT >= 33)
-                    getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-                else getPackageInfo(packageName, 0)
-            }
+        packageInfo = packageManager.run {
+            if (Build.VERSION.SDK_INT >= 33)
+                getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+            else getPackageInfo(packageName, 0)
+        }
         applicationScope = CoroutineScope(SupervisorJob())
         DynamicColors.applyToActivitiesIfAvailable(this)
 
@@ -131,7 +131,7 @@ class App : Application() {
         val profiles = DatabaseUtil.getCookieProfileList()
         val legacyProfiles = profiles.filter { it.content.isBlank() }
         if (legacyProfiles.isEmpty()) return
-        DownloadUtil.extractCookiesFromWebView().onSuccess { content ->
+        CookieUtil.extractCookiesFromWebView().onSuccess { content ->
             legacyProfiles.forEach { profile ->
                 DatabaseUtil.updateCookieProfile(profile.copy(content = content))
             }
@@ -139,7 +139,7 @@ class App : Application() {
     }
 
     private suspend fun writeCookiesFile() {
-        DownloadUtil.getCookiesContentFromDatabase().getOrNull()?.let {
+        CookieUtil.getCookiesContentFromDatabase().getOrNull()?.let {
             FileUtil.writeContentToFile(it, getCookiesFile())
         } ?: getCookiesFile().delete()
     }
@@ -153,35 +153,49 @@ class App : Application() {
         lateinit var packageInfo: PackageInfo
 
         var isServiceRunning = false
+            private set
+
+        // Tracks the bind request, not the connection: binding is async, and a stop that arrives
+        // before onServiceConnected must still unbind, or the service (and its notification) leaks
+        private var isServiceBound = false
 
         private val connection =
             object : ServiceConnection {
                 override fun onServiceConnected(className: ComponentName, service: IBinder) {
-                    val binder = service as DownloadService.DownloadServiceBinder
                     isServiceRunning = true
                 }
 
-                override fun onServiceDisconnected(arg0: ComponentName) {}
+                override fun onServiceDisconnected(arg0: ComponentName) {
+                    isServiceRunning = false
+                }
             }
 
+        @Synchronized
         fun startService() {
-            if (isServiceRunning) return
+            if (isServiceBound) return
             try {
                 Intent(context.applicationContext, DownloadService::class.java).also { intent ->
-                    context.applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+                    isServiceBound =
+                        context.applicationContext.bindService(
+                            intent,
+                            connection,
+                            Context.BIND_AUTO_CREATE,
+                        )
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "startService", e)
             }
         }
 
+        @Synchronized
         fun stopService() {
-            if (!isServiceRunning) return
+            if (!isServiceBound) return
             try {
+                isServiceBound = false
                 isServiceRunning = false
-                context.applicationContext.run { unbindService(connection) }
+                context.applicationContext.unbindService(connection)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "stopService", e)
             }
         }
 

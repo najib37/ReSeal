@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
@@ -25,7 +24,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Cookie
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
@@ -33,6 +31,7 @@ import androidx.compose.material.icons.outlined.FileCopy
 import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.GeneratingTokens
 import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -92,14 +91,14 @@ import com.junkfood.seal.ui.component.TextButtonWithIcon
 import com.junkfood.seal.ui.theme.SealTheme
 import com.junkfood.seal.ui.theme.generateLabelColor
 import com.junkfood.seal.util.COOKIES
+import com.junkfood.seal.util.CookieUtil
+import com.junkfood.seal.util.CookieUtil.parseNetscapeCookies
+import com.junkfood.seal.util.CookieUtil.toCookiesFileContent
 import com.junkfood.seal.util.DatabaseUtil
-import com.junkfood.seal.util.DownloadUtil
-import com.junkfood.seal.util.DownloadUtil.parseNetscapeCookies
-import com.junkfood.seal.util.DownloadUtil.toCookiesFileContent
 import com.junkfood.seal.util.PreferenceUtil.getBoolean
 import com.junkfood.seal.util.PreferenceUtil.updateBoolean
-import com.junkfood.seal.util.USER_AGENT
 import com.junkfood.seal.util.ToastUtil
+import com.junkfood.seal.util.USER_AGENT
 import com.junkfood.seal.util.matchUrlFromClipboard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -128,9 +127,10 @@ fun CookieProfilePage(
     var showHelpDialog by remember { mutableStateOf(false) }
     val view = LocalView.current
 
-    val cookieList by remember(cookies) {
-        derivedStateOf { cookies.flatMap { parseNetscapeCookies(it.content) } }
-    }
+    val cookieList by
+        remember(cookies) {
+            derivedStateOf { cookies.flatMap { parseNetscapeCookies(it.content) } }
+        }
 
     var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -149,47 +149,54 @@ fun CookieProfilePage(
         }
 
     val importLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument()
-        ) { uri ->
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri
+            ->
             uri?.let {
                 scope.launch(Dispatchers.IO) {
                     runCatching {
-                        val content = context.contentResolver.openInputStream(it)?.use { stream ->
-                            stream.bufferedReader().readText()
-                        } ?: throw Exception("Failed to read file")
+                        val content =
+                            context.contentResolver.openInputStream(it)?.use { stream ->
+                                stream.bufferedReader().readText()
+                            } ?: throw Exception("Failed to read file")
                         val importedCookies = parseNetscapeCookies(content)
                         if (importedCookies.isEmpty()) throw Exception("No valid cookies found")
-                        importedCookies.groupBy { it.domain }.forEach { (domain, cookiesForDomain) ->
-                            val url = "https://${domain.removePrefix(".")}"
-                            val existing = DatabaseUtil.getCookieProfileByUrl(url)
-                            val profile =
-                                existing?.copy(
-                                    content = cookiesForDomain.toCookiesFileContent()
-                                )
-                                    ?: CookieProfile(
-                                        id = 0,
-                                        url = url,
-                                        content = cookiesForDomain.toCookiesFileContent(),
+                        importedCookies
+                            .groupBy { it.domain }
+                            .forEach { (domain, cookiesForDomain) ->
+                                val url = "https://${domain.removePrefix(".")}"
+                                val existing = DatabaseUtil.getCookieProfileByUrl(url)
+                                val profile =
+                                    existing?.copy(
+                                        content = cookiesForDomain.toCookiesFileContent()
                                     )
-                            if (existing != null) {
-                                DatabaseUtil.updateCookieProfile(profile)
-                            } else {
-                                DatabaseUtil.insertCookieProfile(profile)
+                                        ?: CookieProfile(
+                                            id = 0,
+                                            url = url,
+                                            content = cookiesForDomain.toCookiesFileContent(),
+                                        )
+                                if (existing != null) {
+                                    DatabaseUtil.updateCookieProfile(profile)
+                                } else {
+                                    DatabaseUtil.insertCookieProfile(profile)
+                                }
+                            }
+                        importedCookies
+                    }
+                        .onSuccess { importedCookies ->
+                            withContext(Dispatchers.Main) {
+                                ToastUtil.makeToast(
+                                    context.getString(
+                                        R.string.cookies_imported,
+                                        importedCookies.size,
+                                    )
+                                )
                             }
                         }
-                        importedCookies
-                    }.onSuccess { importedCookies ->
-                        withContext(Dispatchers.Main) {
-                            ToastUtil.makeToast(
-                                context.getString(R.string.cookies_imported, importedCookies.size)
-                            )
+                        .onFailure {
+                            withContext(Dispatchers.Main) {
+                                ToastUtil.makeToast(context.getString(R.string.import_failed))
+                            }
                         }
-                    }.onFailure {
-                        withContext(Dispatchers.Main) {
-                            ToastUtil.makeToast(context.getString(R.string.import_failed))
-                        }
-                    }
                 }
             }
         }
@@ -339,7 +346,7 @@ fun CookieProfilePage(
             navigateToCookieGeneratorPage = {
                 cookiesViewModel.updateCookieProfile()
                 scope.launch(Dispatchers.IO) {
-                    DownloadUtil.syncCookiesToWebView()
+                    CookieUtil.syncCookiesToWebView()
                     withContext(Dispatchers.Main) { navigateToCookieGeneratorPage() }
                 }
             },

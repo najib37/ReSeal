@@ -474,4 +474,8 @@
         <item quantity="one">%d audio</item>
         <item quantity="other">%d audios</item>
     </plurals>
+    <string name="clear_all_downloads">Clear all downloads</string>
+    <string name="clear_all_downloads_title">Clear all downloads?</string>
+    <string name="delete_all">Delete all</string>
+    <string name="retry">Retry</string>
 </resources>

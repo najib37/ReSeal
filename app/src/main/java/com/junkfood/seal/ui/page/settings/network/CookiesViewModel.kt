@@ -38,24 +38,9 @@ class CookiesViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) { DatabaseUtil.deleteCookieProfile(cookieProfile) }
     }
 
-    fun generateNewCookies(content: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            mutableStateFlow.update {
-                val newProfile = it.editingCookieProfile.copy(content = content)
-                DatabaseUtil.updateCookieProfile(newProfile)
-                it.copy(editingCookieProfile = newProfile)
-            }
-        }
-    }
-
     fun updateUrl(url: String) {
         setEditingProfile(cookieProfile = state.editingCookieProfile.copy(url = url))
     }
-
-    fun updateContent(content: String) =
-        mutableStateFlow.update {
-            it.copy(editingCookieProfile = it.editingCookieProfile.copy(content = content))
-        }
 
     fun updateCookieProfile(profile: CookieProfile = state.editingCookieProfile) {
         viewModelScope.launch(Dispatchers.IO) {

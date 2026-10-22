@@ -33,24 +33,14 @@ object UpdateUtil {
 
     // Fork builds are signed with a different key, so updates must come from the fork's releases
     private const val OWNER = "najib37"
-    private const val REPO = "Seal"
-    private const val ARM64 = "arm64-v8a"
-    private const val ARM32 = "armeabi-v7a"
-    private const val X86 = "x86"
-    private const val X64 = "x86_64"
+    // The repo was renamed from Seal; don't depend on GitHub's redirect for the old name
+    private const val REPO = "ReSeal"
     private const val TAG = "UpdateUtil"
 
     private val client = OkHttpClient()
-    private val requestForLatestRelease =
-        Request.Builder()
-            .url("https://api.github.com/repos/${OWNER}/${REPO}/releases/latest")
-            .build()
 
     private val requestForReleases =
         Request.Builder().url("https://api.github.com/repos/${OWNER}/${REPO}/releases").build()
-
-    private const val ytdlpNightlyBuildRelease =
-        "https://api.github.com/repos/yt-dlp/yt-dlp-nightly-builds/releases/latest"
 
     private val jsonFormat = Json { ignoreUnknownKeys = true }
 
@@ -107,40 +97,37 @@ object UpdateUtil {
     private fun Context.getLatestApk() =
         File(cacheDir, "apk").apply { mkdirs() }.resolve("latest.apk")
 
-    fun installLatestApk(context: Context = App.context) =
-        context.run {
-            kotlin
-                .runCatching {
-                    val contentUri =
-                        FileProvider.getUriForFile(this, getFileProvider(), getLatestApk())
-                    val intent =
-                        Intent(Intent.ACTION_VIEW).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            setDataAndType(contentUri, "application/vnd.android.package-archive")
-                        }
-                    startActivity(intent)
-                }
-                .onFailure { throwable: Throwable ->
-                    throwable.printStackTrace()
-                    ToastUtil.makeToast(R.string.app_update_failed)
-                }
-        }
+    fun installLatestApk(context: Context = App.context) = context.run {
+        kotlin
+            .runCatching {
+                val contentUri = FileProvider.getUriForFile(this, getFileProvider(), getLatestApk())
+                val intent =
+                    Intent(Intent.ACTION_VIEW).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        setDataAndType(contentUri, "application/vnd.android.package-archive")
+                    }
+                startActivity(intent)
+            }
+            .onFailure { throwable: Throwable ->
+                throwable.printStackTrace()
+                ToastUtil.makeToast(R.string.app_update_failed)
+            }
+    }
 
-    suspend fun deleteOutdatedApk(context: Context = App.context) =
-        context.runCatching {
-            val apkFile = getLatestApk()
-            if (apkFile.exists()) {
-                val apkVersion =
-                    context.packageManager
-                        .getPackageArchiveInfo(apkFile.absolutePath, 0)
-                        ?.versionName
-                        .toVersion()
-                if (apkVersion <= context.getCurrentVersion()) {
-                    apkFile.delete()
-                }
+    suspend fun deleteOutdatedApk(context: Context = App.context) = context.runCatching {
+        val apkFile = getLatestApk()
+        if (apkFile.exists()) {
+            val apkVersion =
+                context.packageManager
+                    .getPackageArchiveInfo(apkFile.absolutePath, 0)
+                    ?.versionName
+                    .toVersion()
+            if (apkVersion <= context.getCurrentVersion()) {
+                apkFile.delete()
             }
         }
+    }
 
     suspend fun downloadApk(
         context: Context = App.context,
@@ -164,70 +151,78 @@ object UpdateUtil {
             val abiList = Build.SUPPORTED_ABIS
             val preferredArch = abiList.firstOrNull() ?: return@withContext emptyFlow()
 
+            // Match the ABI as a whole token: "x86" must not pick the x86_64 APK
+            val abiToken = Regex("""(^|[-_.])${Regex.escape(preferredArch)}([-_.]|$)""")
             val targetUrl =
-                release.assets
-                    ?.find {
-                        return@find it.name?.contains(preferredArch) ?: false
-                    }
-                    ?.browserDownloadUrl ?: return@withContext emptyFlow()
+                release.assets?.find { it.name?.contains(abiToken) == true }?.browserDownloadUrl
+                    ?: return@withContext emptyFlow()
             val request = Request.Builder().url(targetUrl).build()
             try {
                 val response = client.newCall(request).execute()
-                val responseBody = response.body
-                return@withContext responseBody.downloadFileWithProgress(context.getLatestApk())
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "APK download failed: HTTP ${response.code}")
+                    response.close()
+                    return@withContext emptyFlow()
+                }
+                return@withContext response.body.downloadFileWithProgress(context.getLatestApk())
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "APK download failed", e)
             }
             emptyFlow()
         }
 
-    private fun ResponseBody.downloadFileWithProgress(saveFile: File): Flow<DownloadStatus> =
-        flow {
-                emit(DownloadStatus.Progress(0))
+    private fun ResponseBody.downloadFileWithProgress(saveFile: File): Flow<DownloadStatus> = flow {
+        emit(DownloadStatus.Progress(0))
 
-                var deleteFile = true
+        var deleteFile = true
 
-                try {
-                    byteStream().use { inputStream ->
-                        saveFile.outputStream().use { outputStream ->
-                            val totalBytes = contentLength()
-                            val data = ByteArray(8_192)
-                            var progressBytes = 0L
+        try {
+            byteStream().use { inputStream ->
+                saveFile.outputStream().use { outputStream ->
+                    // -1 when the server doesn't send Content-Length
+                    val totalBytes = contentLength()
+                    val data = ByteArray(8_192)
+                    var progressBytes = 0L
+                    var lastPercent = 0
 
-                            while (true) {
-                                val bytes = inputStream.read(data)
+                    while (true) {
+                        val bytes = inputStream.read(data)
 
-                                if (bytes == -1) {
-                                    break
-                                }
+                        if (bytes == -1) {
+                            break
+                        }
 
-                                outputStream.channel
-                                outputStream.write(data, 0, bytes)
-                                progressBytes += bytes
-                                emit(
-                                    DownloadStatus.Progress(
-                                        percent = ((progressBytes * 100) / totalBytes).toInt()
-                                    )
-                                )
-                            }
-
-                            when {
-                                progressBytes < totalBytes -> throw Exception("missing bytes")
-                                progressBytes > totalBytes -> throw Exception("too many bytes")
-                                else -> deleteFile = false
+                        outputStream.write(data, 0, bytes)
+                        progressBytes += bytes
+                        if (totalBytes > 0) {
+                            val percent = ((progressBytes * 100) / totalBytes).toInt()
+                            // One emission per percent, not per 8 KB chunk
+                            if (percent != lastPercent) {
+                                lastPercent = percent
+                                emit(DownloadStatus.Progress(percent = percent))
                             }
                         }
                     }
 
-                    emit(DownloadStatus.Finished(saveFile))
-                } finally {
-                    if (deleteFile) {
-                        saveFile.delete()
+                    when {
+                        progressBytes == 0L -> throw Exception("empty response")
+                        totalBytes < 0 -> deleteFile = false
+                        progressBytes < totalBytes -> throw Exception("missing bytes")
+                        progressBytes > totalBytes -> throw Exception("too many bytes")
+                        else -> deleteFile = false
                     }
                 }
             }
-            .flowOn(Dispatchers.IO)
-            .distinctUntilChanged()
+
+            emit(DownloadStatus.Finished(saveFile))
+        } finally {
+            if (deleteFile) {
+                saveFile.delete()
+            }
+        }
+    }
+        .flowOn(Dispatchers.IO)
+        .distinctUntilChanged()
 
     @Serializable
     data class Release(

@@ -81,16 +81,20 @@ object DatabaseUtil {
         dao.updateTemplate(commandTemplate)
     }
 
+    /**
+     * Imports the rows of [backup] that aren't already present. Duplicates are matched by content
+     * (path, template text, option), not by row: ids differ between devices and installs.
+     */
     suspend fun importBackup(backup: Backup, types: Set<BackupType>): Int {
         var cnt = 0
         backup.run {
             if (types.contains(BackupType.DownloadHistory)) {
-                val itemList = getDownloadHistory()
+                val existingPaths = getDownloadHistory().mapTo(HashSet()) { it.videoPath }
 
                 if (!downloadHistory.isNullOrEmpty()) {
                     dao.insertAll(
                         downloadHistory
-                            .filterNot { itemList.contains(it) }
+                            .filter { existingPaths.add(it.videoPath) }
                             .map { it.copy(id = 0) }
                             .also { cnt += it.size }
                     )
@@ -98,21 +102,21 @@ object DatabaseUtil {
             }
             if (types.contains(BackupType.CommandTemplate)) {
                 if (templates != null) {
-                    val templateList = getTemplateList()
+                    val existing = getTemplateList().mapTo(HashSet()) { it.name to it.template }
                     dao.importTemplates(
-                        templateList
-                            .filterNot { templateList.contains(it) }
+                        templates
+                            .filter { existing.add(it.name to it.template) }
                             .map { it.copy(id = 0) }
                             .also { cnt += it.size }
                     )
                 }
             }
             if (types.contains(BackupType.CommandShortcut)) {
-                val shortcutList = getShortcutList()
+                val existing = getShortcutList().mapTo(HashSet()) { it.option }
                 if (shortcuts != null) {
                     dao.insertAllShortcuts(
                         shortcuts
-                            .filterNot { shortcutList.contains(it) }
+                            .filter { existing.add(it.option) }
                             .map { it.copy(id = 0) }
                             .also { cnt += it.size }
                     )
