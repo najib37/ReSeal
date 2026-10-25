@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -70,6 +71,10 @@ fun MediaListItem(
     videoFileSize: Long = 0L,
     /** Segment shape; the list passes segmented shapes so items read as one group */
     shape: Shape = PreferenceDefaults.shape,
+    /** Card color when not selected; queue tasks that failed or were canceled pass a red tint */
+    containerColor: Color = PreferenceDefaults.containerColor,
+    /** Replaces the file size line, e.g. with a queue task's state */
+    supportingContent: (@Composable () -> Unit)? = null,
     isSelectEnabled: () -> Boolean = { false },
     isSelected: () -> Boolean = { false },
     onSelect: () -> Unit = {},
@@ -83,15 +88,15 @@ fun MediaListItem(
     val isFileAvailable = videoFileSize != 0L
     val fileSizeText = videoFileSize.toFileSizeText()
 
-    val containerColor by
+    val animatedContainerColor by
         animateColorAsState(
             if (isSelectEnabled() && isSelected()) MaterialTheme.colorScheme.secondaryContainer
-            else PreferenceDefaults.containerColor,
+            else containerColor,
             label = "containerColor",
         )
     Box(
         modifier =
-            with(modifier.clip(shape).background(containerColor)) {
+            with(modifier.clip(shape).background(animatedContainerColor)) {
                     if (!isSelectEnabled())
                         combinedClickable(
                             enabled = true,
@@ -147,17 +152,20 @@ fun MediaListItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                Text(
-                    modifier = Modifier.padding(top = 3.dp),
-                    text =
-                        if (isFileAvailable) fileSizeText else stringResource(R.string.unavailable),
-                    style = MaterialTheme.typography.labelMedium,
-                    color =
-                        with(MaterialTheme.colorScheme) {
-                            if (isFileAvailable) onSurfaceVariant else error
-                        },
-                    maxLines = 1,
-                )
+                if (supportingContent != null) supportingContent()
+                else
+                    Text(
+                        modifier = Modifier.padding(top = 3.dp),
+                        text =
+                            if (isFileAvailable) fileSizeText
+                            else stringResource(R.string.unavailable),
+                        style = MaterialTheme.typography.labelMedium,
+                        color =
+                            with(MaterialTheme.colorScheme) {
+                                if (isFileAvailable) onSurfaceVariant else error
+                            },
+                        maxLines = 1,
+                    )
             }
         }
         AnimatedVisibility(

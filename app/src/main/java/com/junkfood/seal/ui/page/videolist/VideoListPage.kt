@@ -70,6 +70,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -102,6 +103,7 @@ import com.junkfood.seal.ui.component.ConfirmButton
 import com.junkfood.seal.ui.component.ConnectedChoiceRow
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.MediaListItem
+import com.junkfood.seal.ui.component.PreferenceDefaults
 import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.component.SealLargeTopAppBar
 import com.junkfood.seal.ui.component.SealModalBottomSheet
@@ -110,7 +112,6 @@ import com.junkfood.seal.ui.component.VideoFilterChip
 import com.junkfood.seal.ui.page.downloadv2.Filter
 import com.junkfood.seal.ui.page.downloadv2.ListItemStateText
 import com.junkfood.seal.ui.page.downloadv2.SheetContent
-import com.junkfood.seal.ui.page.downloadv2.VideoListItem as TaskListItem
 import com.junkfood.seal.ui.page.downloadv2.rememberTaskActionHandler
 import com.junkfood.seal.ui.svg.DynamicColorImageVectors
 import com.junkfood.seal.ui.svg.drawablevectors.videoSteaming
@@ -285,19 +286,29 @@ fun VideoListPage(
         }
     }
 
-    // Visible items form one segmented group: large outer corners, small inner ones
-    val visibleIds by
-        remember(videoList, viewState, filterSet) {
+    val visibleTasks =
+        when (statusFilter) {
+            StatusFilter.Finished -> emptyList()
+            StatusFilter.Downloading -> downloadingTasks
+            StatusFilter.All -> activeTasks
+        }
+
+    // Queue tasks and history rows form one segmented group: large outer corners, small inner ones.
+    // Keys are task ids (String) and history row ids (Int), so they never collide.
+    val visibleKeys by
+        remember(videoList, viewState, filterSet, visibleTasks) {
             derivedStateOf {
-                videoList.filter { it.filterSort(viewState, filterSet) }.map { it.id }
+                visibleTasks.map { (task, _) -> task.id } +
+                    if (statusFilter == StatusFilter.Downloading) emptyList()
+                    else videoList.filter { it.filterSort(viewState, filterSet) }.map { it.id }
             }
         }
     val outerShape = MaterialTheme.shapes.extraLarge
     val innerCorner = MaterialTheme.shapes.extraSmall.topStart
-    fun segmentShape(id: Int): Shape {
-        val index = visibleIds.indexOf(id)
+    fun segmentShape(key: Any): Shape {
+        val index = visibleKeys.indexOf(key)
         val first = index <= 0
-        val last = index == visibleIds.lastIndex
+        val last = index == visibleKeys.lastIndex
         return outerShape.copy(
             topStart = if (first) outerShape.topStart else innerCorner,
             topEnd = if (first) outerShape.topEnd else innerCorner,
@@ -581,29 +592,44 @@ fun VideoListPage(
                     }
                 }
             }
-            if (statusFilter != StatusFilter.Finished) {
-                items(
-                    items =
-                        if (statusFilter == StatusFilter.Downloading) downloadingTasks
-                        else activeTasks,
-                    key = { (task, _) -> task.id },
-                ) { (task, state) ->
-                    TaskListItem(
-                        modifier =
-                            Modifier.padding(horizontal = 16.dp, vertical = 8.dp).animateItem(),
-                        viewState = state.viewState,
-                        stateIndicator = {
-                            ListItemStateText(
-                                modifier = Modifier.padding(top = 3.dp),
-                                downloadState = state.downloadState,
-                            )
-                        },
-                        onButtonClick = {
-                            view.slightHapticFeedback()
-                            selectedTask = task
-                        },
-                    )
-                }
+            items(items = visibleTasks, key = { (task, _) -> task.id }) { (task, state) ->
+                val taskView = state.viewState
+                val failed =
+                    state.downloadState is Task.DownloadState.Canceled ||
+                        state.downloadState is Task.DownloadState.Error
+                // Same card as finished downloads; failed or canceled ones get a faint red hue
+                val containerColor =
+                    if (failed)
+                        MaterialTheme.colorScheme.errorContainer
+                            .copy(alpha = 0.22f)
+                            .compositeOver(PreferenceDefaults.containerColor)
+                    else PreferenceDefaults.containerColor
+                MediaListItem(
+                    modifier =
+                        Modifier.padding(horizontal = 16.dp)
+                            .padding(vertical = ListItemDefaults.SegmentedGap / 2)
+                            .animateItem(),
+                    shape = segmentShape(task.id),
+                    containerColor = containerColor,
+                    title = taskView.title,
+                    author = taskView.uploader,
+                    thumbnailUrl = taskView.thumbnailUrl.orEmpty(),
+                    videoUrl = taskView.url,
+                    supportingContent = {
+                        ListItemStateText(
+                            modifier = Modifier.padding(top = 3.dp),
+                            downloadState = state.downloadState,
+                        )
+                    },
+                    onClick = {
+                        view.slightHapticFeedback()
+                        selectedTask = task
+                    },
+                    onShowContextMenu = {
+                        view.slightHapticFeedback()
+                        selectedTask = task
+                    },
+                )
             }
             for (info in if (statusFilter == StatusFilter.Downloading) emptyList() else videoList) {
 
